@@ -35,27 +35,27 @@
 #include "pb_encode.h"
 
 
-// These buffers are used to ensure no conflict with the sCr_ buffers of the reach stack.
-// These may not be needed in a BLE system.
-// The functions here similarly copy those in cr_stack.c as a quick way to avoid 
-// conflict
-#define UNCODED_PAYLOAD_SIZE  (CR_CODED_BUFFER_SIZE-4)
-static uint8_t sRs_uncoded_response_buffer[UNCODED_PAYLOAD_SIZE];
-static cr_ReachMessage sRs_uncoded_message_structure;
-static uint8_t sRs_encoded_payload_buffer[UNCODED_PAYLOAD_SIZE]; 
+// The device acts as a client for notifications. 
+// Notifications can be are asynchronous to server messages.
+// Hence a separate set of buffers is used.
+// The buffer usage is optimized for minimum memory using a ping/pong configuration.
+// Possibly the ping pong buffers could be a bit smaller.
+
+static uint8_t sRs_ping[CR_CODED_BUFFER_SIZE]    ALIGN_TO_WORD;
+static uint8_t sRs_rawPong[CR_CODED_BUFFER_SIZE] ALIGN_TO_WORD;
+// the "pong" buffer is set to be the uncoded data in the cr_ReachMessage structure.
+static cr_ReachMessage *psRs_uncoded_message_structure = (cr_ReachMessage *)sRs_rawPong;
+static uint8_t *psRs_pong = NULL;  // set below
+
 static size_t sRs_encoded_payload_size; 
-static uint8_t sRs_uncoded_response_buffer[UNCODED_PAYLOAD_SIZE];
-
-static uint8_t sRs_encoded_response_buffer[CR_CODED_BUFFER_SIZE];
-static size_t  sRs_encoded_response_size = 0;
-
+static size_t sRs_encoded_response_size = 0;
 
 static
 bool encode_notification_payload(cr_ReachMessageTypes message_type,    // in
-                          const void *data,                     // in:  data to be encoded
-                          uint8_t *buffer,                      // out: Encode to here.
-                          pb_size_t buffer_size,                // in:  max size of encoded data
-                          size_t *encode_size)                  // out: encoded data size
+                                 const void *data,                     // in:  data to be encoded
+                                 uint8_t *buffer,                      // out: Encode to here.
+                                 pb_size_t buffer_size,                // in:  max size of encoded data
+                                 size_t *encode_size)                  // out: encoded data size
 {
 
   /* Create a stream that writes to the buffer. */
@@ -70,11 +70,12 @@ bool encode_notification_payload(cr_ReachMessageTypes message_type,    // in
       if (status) {
         *encode_size = os_stream.bytes_written;
         // cr_ErrorReport *er = (cr_ErrorReport *)data;
-        // i3_log(LOG_MASK_REACH, "Error Report: %s", er->result_string);
+        // I3_LOG(LOG_MASK_REACH, "Error Report: %s", er->result_string);
       }
       break;
   case cr_ReachMessageTypes_DISCOVER_STREAMS:
-    // if (request) {
+    //  Stream support not yet coded
+    //  if (request) {
     //   status = pb_encode(&os_stream, cr_StreamsRequest_fields, data);
     //   if (status) {
     //     *encode_size = os_stream.bytes_written;
@@ -127,44 +128,41 @@ bool encode_notification_message(const cr_ReachMessage *message,   // in:  messa
   return status;
 }
 
-// encodes message to sRs_encoded_response_buffer.
+// encodes message to sRs_ping.  payload is expected to be sRs_ping as well.
 // The caller must populate the header
 static int 
 rs_notification_message(cr_ReachMessageTypes message_type,    // in
-                        const void *payload,                  // in:  to be encoded
-                        cr_ReachMessageHeader *hdr)           // in
+                        const void *payload)                  // in:  to be encoded
 {
-    // i3_log(LOG_MASK_REACH, "%s(): hdr: type %d, num_obj %d, remain %d, trans_id %d.", __FUNCTION__,
+    // I3_LOG(LOG_MASK_REACH, "%s(): hdr: type %d, num_obj %d, remain %d, trans_id %d.", __FUNCTION__,
     //        hdr->message_type, hdr->number_of_objects, hdr->remaining_objects, hdr->transaction_id);
 
+   if (psRs_pong == NULL)
+   {
+       psRs_pong = (uint8_t *)psRs_uncoded_message_structure->payload.bytes;
+   }
+
     if (!encode_notification_payload(message_type, payload,
-                              sRs_encoded_payload_buffer,
-                              sizeof(sRs_encoded_payload_buffer),
-                              &sRs_encoded_payload_size))
+                                     psRs_pong, REACH_MESSAGE_PAYLOAD_MAX,
+                                     &sRs_encoded_payload_size))
     {
         cr_report_error(cr_ErrorCodes_ENCODING_FAILED, "encode payload %d failed.", message_type);
         return cr_ErrorCodes_ENCODING_FAILED;
     }
-    // i3_log_dump_buffer(1, "payload encoded", sRs_encoded_payload_buffer, sRs_encoded_payload_size); 
 
     // build the message envelope
-    sRs_uncoded_message_structure.header     = *hdr;
-    sRs_uncoded_message_structure.has_header = true;
-    memcpy(sRs_uncoded_message_structure.payload.bytes, 
-           sRs_encoded_payload_buffer, 
-           sRs_encoded_payload_size);
-    sRs_uncoded_message_structure.payload.size = sRs_encoded_payload_size;  
+    psRs_uncoded_message_structure->header.message_type = message_type;
+    psRs_uncoded_message_structure->header.number_of_objects = 0;
+    psRs_uncoded_message_structure->header.remaining_objects = 0;
+    // The transaction ID should always be 0 for the app 
+    psRs_uncoded_message_structure->header.transaction_id    = 0;  
+    psRs_uncoded_message_structure->has_header = true;
+    psRs_uncoded_message_structure->payload.size = sRs_encoded_payload_size;
+    // psRs_uncoded_message_structure->payload.bytes  is already sRs_pong  
 
-    /*i3_log(LOG_MASK_REACH, "%s(): type %d, num_obj %d, remain %d, trans_id %d.", __FUNCTION__,
-           sRs_uncoded_message_structure.header.message_type, 
-           sRs_uncoded_message_structure.header.number_of_objects, 
-           sRs_uncoded_message_structure.header.remaining_objects, 
-           sRs_uncoded_message_structure.header.transaction_id);
-     */
-    // encode the wrapped message
-    if (!encode_notification_message(&sRs_uncoded_message_structure,
-                                     sRs_encoded_response_buffer,
-                                     sizeof(sRs_encoded_response_buffer),
+    // encode the wrapped message back into ping
+    if (!encode_notification_message(psRs_uncoded_message_structure,
+                                     sRs_ping, sizeof(sRs_ping),
                                      &sRs_encoded_response_size))
     {
         printf("%s: encode message %d failed.", __FUNCTION__, message_type);
@@ -173,53 +171,34 @@ rs_notification_message(cr_ReachMessageTypes message_type,    // in
     return 0;
 }
 
-
 // When the device supports a CLI it is expected to share anything printed 
 // to the CLI back to the stack for remote display using crcb_cli_respond()
 int crcb_cli_respond(char *cli)
 {
-    i3_log(LOG_MASK_WIRE, TEXT_GREEN "%s for CLI" TEXT_RESET, __FUNCTION__);
-    cr_CLIData *cld = (cr_CLIData*)sRs_uncoded_response_buffer;
+    I3_LOG(LOG_MASK_WIRE, TEXT_GREEN "%s for CLI" TEXT_RESET, __FUNCTION__);
+    cr_CLIData *cld = (cr_CLIData*)sRs_ping;
     strncpy(cld->message_data, cli, REACH_ERROR_BUFFER_LEN);
     cld->is_complete = true;
 
-    cr_ReachMessageHeader hdr;
-    hdr.message_type      = cr_ReachMessageTypes_CLI_NOTIFICATION;
-    hdr.number_of_objects = 0;
-    hdr.remaining_objects = 0;
-    hdr.transaction_id    = 0;  // The transaction ID should always be 0 as the app 
-                               // will never request a CLI notification
+    rs_notification_message(cr_ReachMessageTypes_CLI_NOTIFICATION, sRs_ping);
 
-    rs_notification_message(cr_ReachMessageTypes_CLI_NOTIFICATION,
-                             sRs_uncoded_response_buffer,  // in:  to be encoded
-                             &hdr);
-
-    i3_log_dump_buffer(LOG_MASK_WIRE, "CLI", sRs_encoded_response_buffer, sRs_encoded_response_size);
-    rsl_notify_client(sRs_encoded_response_buffer, sRs_encoded_response_size);
+    LOG_DUMP_WIRE("CLI", sRs_ping, sRs_encoded_response_size);
+    rsl_notify_client(sRs_ping, sRs_encoded_response_size);
 
     return 0;
 }
-
 
 // When the device supports a CLI it is expected to share anything printed 
 // to the CLI back to the stack for remote display using crcb_cli_respond()
 int crcb_notify_error(cr_ErrorReport *err)
 {
-    cr_ErrorReport *errRep = (cr_ErrorReport*)sRs_uncoded_response_buffer;
+    cr_ErrorReport *errRep = (cr_ErrorReport*)sRs_ping;
     memcpy(errRep, err, sizeof(cr_ErrorReport));
 
-    // i3_log(LOG_MASK_WIRE, TEXT_RED "%s for error" TEXT_RESET, __FUNCTION__);
-    cr_ReachMessageHeader hdr;
-    hdr.message_type      = cr_ReachMessageTypes_ERROR_REPORT;
-    hdr.number_of_objects = 0;
-    hdr.remaining_objects = 0;
-    hdr.transaction_id    = 0;
-    rs_notification_message(cr_ReachMessageTypes_ERROR_REPORT,
-                             sRs_uncoded_response_buffer,  // in: to be encoded
-                             &hdr);
+    rs_notification_message(cr_ReachMessageTypes_ERROR_REPORT, sRs_ping);
 
-    i3_log_dump_buffer(LOG_MASK_WIRE, "error report", sRs_encoded_response_buffer, sRs_encoded_response_size);
-    rsl_notify_client(sRs_encoded_response_buffer, sRs_encoded_response_size);
+    LOG_DUMP_WIRE("error report", sRs_ping, sRs_encoded_response_size);
+    rsl_notify_client(sRs_ping, sRs_encoded_response_size);
 
     return 0;
 }

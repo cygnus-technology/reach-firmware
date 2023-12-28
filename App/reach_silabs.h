@@ -24,6 +24,7 @@
 #include "sl_cli_command.h"
 
 #define REACH_MAX_PROMPT_SIZE 256
+#define REACH_SN_KEY    0x10000
 
 // should come from GATT DB.
 #define REACH_BLE_CHARICTERISTIC_ID   gattdb_REACH
@@ -31,8 +32,11 @@
 void rsl_init();
 int rsl_stats();
 
+// stores the connection info so others can use it.
 void rsl_inform_connection(uint8_t connection, uint16_t characteristic);
+uint8_t rsl_get_connection(void);
 void rsl_inform_subscribed(bool subscribed);
+int rsl_get_rssi(void);
 
 int rsl_notify_client(uint8_t *data, size_t len);
 
@@ -53,6 +57,8 @@ void rsl_bt_on_event(sl_bt_msg_t *evt);
 
 const char *rsl_get_advertised_name();
 
+int rsl_read_serial_number(unsigned int *sn);
+
 /**************************************************************************//**
  * Command line handlers:
  *****************************************************************************/
@@ -62,6 +68,7 @@ extern void cli_lm(sl_cli_command_arg_t *args);
 extern void cli_rcli(sl_cli_command_arg_t *args);
 extern void cli_phy(sl_cli_command_arg_t *args);
 extern void cli_nvm(sl_cli_command_arg_t *args);
+extern void cli_sn(sl_cli_command_arg_t *args);
 
 
 #endif // _REACH_H_

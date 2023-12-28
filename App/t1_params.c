@@ -29,7 +29,7 @@
 
 // This is effectively a 'fake' parameter repository.
 // The init function makes it valid.
-static cr_ParameterValue param_val[NUM_PARAMS];
+static cr_ParameterValue sCr_param_val[NUM_PARAMS];
 
 static int read_param_from_nvm(const uint32_t pid, cr_ParameterValue *param);
 static int write_param_to_nvm(const uint32_t pid, const cr_ParameterValue *param);
@@ -39,55 +39,55 @@ void init_param_repo()
     int rval = 0;
     for (int i=0; i<NUM_PARAMS; i++)
     {
-        param_val[i].parameter_id = param_desc[i].id;
+        sCr_param_val[i].parameter_id = param_desc[i].id;
 
         // the PID directly maps to the parameter type, just to make it easy.
         switch (param_desc[i].data_type)
         {
         case cr_ParameterDataType_UINT32: // pid 1, 23
-            param_val[i].value.uint32_value = 1984;
-            param_val[i].which_value = cr_ParameterValue_uint32_value_tag;
+            sCr_param_val[i].value.uint32_value = 1984;
+            sCr_param_val[i].which_value = cr_ParameterValue_uint32_value_tag;
             break;
         case cr_ParameterDataType_INT32: // pid 3, 25
-            param_val[i].value.sint32_value = -1999;
-            param_val[i].which_value = cr_ParameterValue_sint32_value_tag;
+            sCr_param_val[i].value.sint32_value = -1999;
+            sCr_param_val[i].which_value = cr_ParameterValue_sint32_value_tag;
             break;
         case cr_ParameterDataType_FLOAT32: // pid 5, 27
-            param_val[i].value.float32_value = 0.993;
-            param_val[i].which_value = cr_ParameterValue_float32_value_tag;
+            sCr_param_val[i].value.float32_value = 0.993;
+            sCr_param_val[i].which_value = cr_ParameterValue_float32_value_tag;
             break;
         case cr_ParameterDataType_UINT64:  // pid 7, 29
-            param_val[i].value.uint64_value = 441;
-            param_val[i].which_value = cr_ParameterValue_uint64_value_tag;
+            sCr_param_val[i].value.uint64_value = 441;
+            sCr_param_val[i].which_value = cr_ParameterValue_uint64_value_tag;
             break;
         case cr_ParameterDataType_INT64:  // pid 9
-            param_val[i].value.sint64_value = -10853;
-            param_val[i].which_value = cr_ParameterValue_sint64_value_tag;
+            sCr_param_val[i].value.sint64_value = -10853;
+            sCr_param_val[i].which_value = cr_ParameterValue_sint64_value_tag;
             break;
         case cr_ParameterDataType_FLOAT64:  // pid 11
-            param_val[i].value.float64_value = 0.51111111111;
-            param_val[i].which_value = cr_ParameterValue_float64_value_tag;
+            sCr_param_val[i].value.float64_value = 0.51111111111;
+            sCr_param_val[i].which_value = cr_ParameterValue_float64_value_tag;
             break;
         case cr_ParameterDataType_BOOL:  // pid 13
-            param_val[i].value.bool_value = true;
-            param_val[i].which_value = cr_ParameterValue_bool_value_tag;
+            sCr_param_val[i].value.bool_value = true;
+            sCr_param_val[i].which_value = cr_ParameterValue_bool_value_tag;
             break;
         case cr_ParameterDataType_STRING:  // pid 15
-            sprintf(param_val[i].value.string_value, "Flea bag");
-            param_val[i].which_value = cr_ParameterValue_string_value_tag;
+            sprintf(sCr_param_val[i].value.string_value, "Flea bag");
+            sCr_param_val[i].which_value = cr_ParameterValue_string_value_tag;
             break;
         case cr_ParameterDataType_ENUMERATION:  // 17
-            param_val[i].value.enum_value = 3;
-            param_val[i].which_value = cr_ParameterValue_enum_value_tag;
+            sCr_param_val[i].value.enum_value = 3;
+            sCr_param_val[i].which_value = cr_ParameterValue_enum_value_tag;
             break;
         case cr_ParameterDataType_BIT_FIELD:  // 19
-            param_val[i].value.bitfield_value = 0xDEAD;
-            param_val[i].which_value = cr_ParameterValue_bitfield_value_tag;
+            sCr_param_val[i].value.bitfield_value = 0xDEAD;
+            sCr_param_val[i].which_value = cr_ParameterValue_bitfield_value_tag;
             break;
         case cr_ParameterDataType_BYTE_ARRAY:  // 21
-            sprintf((char*)param_val[i].value.bytes_value.bytes, "a byte array");
-            param_val[i].value.bytes_value.size  = 13;
-            param_val[i].which_value = cr_ParameterValue_bytes_value_tag;
+            sprintf((char*)sCr_param_val[i].value.bytes_value.bytes, "a byte array");
+            sCr_param_val[i].value.bytes_value.size  = 13;
+            sCr_param_val[i].which_value = cr_ParameterValue_bytes_value_tag;
             break;
         default:
             affirm(0);  // should not happen.
@@ -110,10 +110,10 @@ void init_param_repo()
             i3_log(LOG_MASK_ERROR, "At param index %d, NVM-EX not supported.", i);
             break;
         case cr_StorageLocation_NONVOLATILE:
-            rval = read_param_from_nvm(param_desc[i].id, &param_val[i]);
+            rval = read_param_from_nvm(param_desc[i].id, &sCr_param_val[i]);
             if (rval != 0) {
                 // first time?
-                write_param_to_nvm(param_desc[i].id, &param_val[i]);
+                write_param_to_nvm(param_desc[i].id, &sCr_param_val[i]);
                 i3_log(LOG_MASK_ALWAYS, "Initialized pid %d in NVM.", param_desc[i].id);
             }
             break;
@@ -128,8 +128,8 @@ int crcb_parameter_read(const uint32_t pid, cr_ParameterValue *data)
     affirm(data != NULL);
 
     for (int i=0; i<NUM_PARAMS; i++) {
-        if (param_val[i].parameter_id == pid) {
-            *data = param_val[i];
+        if (sCr_param_val[i].parameter_id == pid) {
+            *data = sCr_param_val[i];
             // to do: write timestamp.
             return 0;
         }
@@ -142,68 +142,68 @@ int crcb_parameter_write(const uint32_t pid, const cr_ParameterValue *data)
     int rval = 0;
 
     for (int i=0; i<NUM_PARAMS; i++) {
-        if (param_val[i].parameter_id == pid) 
+        if (sCr_param_val[i].parameter_id == pid) 
         {
-            i3_log(LOG_MASK_PARAMS, "Write param[%d], pid %d (%d)", 
+            I3_LOG(LOG_MASK_PARAMS, "Write param[%d], pid %d (%d)", 
                    i, pid, data->parameter_id);
-            i3_log(LOG_MASK_PARAMS, "  timestamp %d", data->timestamp);
-            i3_log(LOG_MASK_PARAMS, "  which %d", data->which_value);
-            param_val[i].timestamp = data->timestamp;
-            param_val[i].which_value = data->which_value;
+            I3_LOG(LOG_MASK_PARAMS, "  timestamp %d", data->timestamp);
+            I3_LOG(LOG_MASK_PARAMS, "  which %d", data->which_value);
+            sCr_param_val[i].timestamp = data->timestamp;
+            sCr_param_val[i].which_value = data->which_value;
 
             switch (data->which_value)
             {
             case cr_ParameterValue_uint32_value_tag:
-                param_val[i].value.uint32_value = data->value.uint32_value;
+                sCr_param_val[i].value.uint32_value = data->value.uint32_value;
                 break;
             case cr_ParameterValue_sint32_value_tag:
-                param_val[i].value.sint32_value = data->value.sint32_value;
+                sCr_param_val[i].value.sint32_value = data->value.sint32_value;
                 break;
             case cr_ParameterValue_float32_value_tag:
-                param_val[i].value.float32_value = data->value.float32_value;
+                sCr_param_val[i].value.float32_value = data->value.float32_value;
                 break;
             case cr_ParameterValue_uint64_value_tag:
-                param_val[i].value.uint64_value = data->value.uint64_value;
+                sCr_param_val[i].value.uint64_value = data->value.uint64_value;
                 break;
             case cr_ParameterValue_sint64_value_tag:
-                param_val[i].value.sint64_value = data->value.sint64_value;
+                sCr_param_val[i].value.sint64_value = data->value.sint64_value;
                 break;
             case cr_ParameterValue_float64_value_tag:
-                param_val[i].value.float64_value = data->value.float64_value;
+                sCr_param_val[i].value.float64_value = data->value.float64_value;
                 break;
             case cr_ParameterValue_bool_value_tag:
-                param_val[i].value.bool_value = data->value.bool_value;
+                sCr_param_val[i].value.bool_value = data->value.bool_value;
                 break;
             case cr_ParameterValue_string_value_tag:
-                memcpy(param_val[i].value.string_value,
+                memcpy(sCr_param_val[i].value.string_value,
                        data->value.string_value, REACH_PVAL_STRING_LEN);
-                param_val[i].value.string_value[REACH_PVAL_STRING_LEN-1] = 0;
-                i3_log(LOG_MASK_PARAMS, "String value: %s",
-                       param_val[i].value.string_value);
+                sCr_param_val[i].value.string_value[REACH_PVAL_STRING_LEN-1] = 0;
+                I3_LOG(LOG_MASK_PARAMS, "String value: %s",
+                       sCr_param_val[i].value.string_value);
                 break;
             case cr_ParameterValue_bitfield_value_tag:
-                param_val[i].value.bitfield_value = data->value.bitfield_value;
+                sCr_param_val[i].value.bitfield_value = data->value.bitfield_value;
                 break;
             case cr_ParameterValue_enum_value_tag:
-                param_val[i].value.enum_value = data->value.enum_value;
+                sCr_param_val[i].value.enum_value = data->value.enum_value;
                 break;
             case cr_ParameterValue_bytes_value_tag:
-                memcpy(param_val[i].value.bytes_value.bytes, 
+                memcpy(sCr_param_val[i].value.bytes_value.bytes, 
                        data->value.bytes_value.bytes, 
                        REACH_PVAL_BYTES_LEN);
                 if (data->value.bytes_value.size > REACH_PVAL_BYTES_LEN)
                 {
                     LOG_ERROR("Parameter write of bytes has invalide size %d > %d", 
                               data->value.bytes_value.size, REACH_PVAL_BYTES_LEN);
-                    param_val[i].value.bytes_value.size = REACH_PVAL_BYTES_LEN;
+                    sCr_param_val[i].value.bytes_value.size = REACH_PVAL_BYTES_LEN;
                 }
                 else
                 {
-                    param_val[i].value.bytes_value.size = data->value.bytes_value.size;
+                    sCr_param_val[i].value.bytes_value.size = data->value.bytes_value.size;
                 }
-                i3_log_dump_buffer(LOG_MASK_PARAMS, "bytes value",
-                                   param_val[i].value.bytes_value.bytes,
-                                   param_val[i].value.bytes_value.size);
+                LOG_DUMP_MASK(LOG_MASK_PARAMS, "bytes value",
+                              sCr_param_val[i].value.bytes_value.bytes,
+                              sCr_param_val[i].value.bytes_value.size);
                 break;
             default:
                 LOG_ERROR("Parameter write which_value %d not recognized.", 
@@ -230,7 +230,7 @@ int crcb_parameter_write(const uint32_t pid, const cr_ParameterValue *data)
                     i3_log(LOG_MASK_ERROR, "%s: At param index %d, NVM-EX not supported.", __FUNCTION__, i);
                     break;
                 case cr_StorageLocation_NONVOLATILE:
-                    write_param_to_nvm(param_desc[i].id, &param_val[i]);
+                    write_param_to_nvm(param_desc[i].id, &sCr_param_val[i]);
                     break;
                 }
             }
@@ -249,7 +249,7 @@ uint32_t crcb_compute_parameter_hash(void)
     uint32_t *ptr = (uint32_t*)param_desc;
     // char *cptr = (char*)param_desc;
     size_t sz = sizeof(param_desc)/(sizeof(uint32_t));
-    // i3_log_dump_buffer(LOG_MASK_PARAMS, "Raw Params", cptr, sizeof(param_desc));
+    // LOG_DUMP_MASK(LOG_MASK_PARAMS, "Raw Params", cptr, sizeof(param_desc));
 
     uint32_t hash = ptr[0];
     for (size_t i= 1; i<sz; i++)
@@ -261,7 +261,7 @@ uint32_t crcb_compute_parameter_hash(void)
     for (size_t i= 0; i<sz1; i++)
         hash ^= ptr[i];
 
-    i3_log(LOG_MASK_PARAMS, "%s: hash 0x%x over %d+%d = %d words.\n", 
+    I3_LOG(LOG_MASK_PARAMS, "%s: hash 0x%x over %d+%d = %d words.\n", 
            __FUNCTION__, hash, sz, sz1, sz+sz1);
     return hash;
 }
@@ -296,7 +296,7 @@ int crcb_parameter_discover_next(cr_ParameterInfo **ppDesc)
 {
     if (sCurrentParameter >= NUM_PARAMS)
     {
-        i3_log(LOG_MASK_PARAMS, "%s: sCurrentParameter (%d) >= NUM_PARAMS (%d)", 
+        I3_LOG(LOG_MASK_PARAMS, "%s: sCurrentParameter (%d) >= NUM_PARAMS (%d)", 
                __FUNCTION__, sCurrentParameter, NUM_PARAMS);
         return cr_ErrorCodes_INVALID_PARAMETER;
     }
@@ -321,11 +321,11 @@ int crcb_parameter_discover_reset(const uint32_t pid)
     {
         if (param_desc[i].id == pid) {
             sCurrentParameter = i;
-            i3_log(LOG_MASK_PARAMS, "dp reset(%d) reset to %d", pid, sCurrentParameter);
+            I3_LOG(LOG_MASK_PARAMS, "dp reset(%d) reset to %d", pid, sCurrentParameter);
             return 0;
         }
     }
-    i3_log(LOG_MASK_PARAMS, "dp reset(%d) reset defaults to %d", pid, sCurrentParameter);
+    I3_LOG(LOG_MASK_PARAMS, "dp reset(%d) reset defaults to %d", pid, sCurrentParameter);
     return cr_ErrorCodes_INVALID_PARAMETER;
 }
 
@@ -363,13 +363,13 @@ int crcb_parameter_ex_discover_next(cr_ParamExInfoResponse *pDesc)
     pDesc->enumerations_count = 0;
     if (sCurrentExParam>=NUM_EX_PARAMS)
     {
-        i3_log(LOG_MASK_PARAMS, "%s: No more ex params.", __FUNCTION__);
+        I3_LOG(LOG_MASK_PARAMS, "%s: No more ex params.", __FUNCTION__);
         return cr_ErrorCodes_INVALID_PARAMETER;
     }
 
     if (sRequestedParamPid < 0)
     {
-        i3_log(LOG_MASK_PARAMS, "%s: For all, return param_ex %d.", __FUNCTION__, sCurrentExParam);
+        I3_LOG(LOG_MASK_PARAMS, "%s: For all, return param_ex %d.", __FUNCTION__, sCurrentExParam);
         *pDesc = param_ex_desc[sCurrentExParam];
         sCurrentExParam++;
         return 0;
@@ -379,7 +379,7 @@ int crcb_parameter_ex_discover_next(cr_ParamExInfoResponse *pDesc)
     {
         if ((int32_t)param_ex_desc[i].associated_pid == sRequestedParamPid)
         {
-            i3_log(LOG_MASK_PARAMS, "%s: For pid %d, return param_ex %d.", 
+            I3_LOG(LOG_MASK_PARAMS, "%s: For pid %d, return param_ex %d.", 
                    __FUNCTION__, sRequestedParamPid, sCurrentExParam);
             *pDesc = param_ex_desc[i];
             sCurrentExParam = i+1;;
@@ -387,7 +387,7 @@ int crcb_parameter_ex_discover_next(cr_ParamExInfoResponse *pDesc)
         }
     }
     // should not get here.
-    i3_log(LOG_MASK_PARAMS, "%s: No more ex params 2.", __FUNCTION__);
+    I3_LOG(LOG_MASK_PARAMS, "%s: No more ex params 2.", __FUNCTION__);
     return cr_ErrorCodes_INVALID_PARAMETER;
 }
 
@@ -397,8 +397,8 @@ void generate_data_for_notify(uint32_t timestamp)
     uint32_t delta = timestamp - sLastChanged;
     if (delta < 1000)
         return;   // this parameter changes once per second.
-    param_val[11].value.sint32_value++;
-    param_val[11].timestamp = timestamp;
+    sCr_param_val[11].value.sint32_value++;
+    sCr_param_val[11].timestamp = timestamp;
     sLastChanged = timestamp;
 
 }
@@ -410,7 +410,7 @@ static int read_param_from_nvm(const uint32_t pid, cr_ParameterValue *param)
     uint32_t objectType;
 
     for (int i=0; i<NUM_PARAMS; i++) {
-        if (param_val[i].parameter_id == pid) 
+        if (sCr_param_val[i].parameter_id == pid) 
         {
             key = pid;
             break;
@@ -442,7 +442,7 @@ static int write_param_to_nvm(const uint32_t pid, const cr_ParameterValue *param
     int key = -1;
 
     for (int i=0; i<NUM_PARAMS; i++) {
-        if (param_val[i].parameter_id == pid) 
+        if (sCr_param_val[i].parameter_id == pid) 
         {
             key = i;
             break;
@@ -469,7 +469,7 @@ static int write_param_to_nvm(const uint32_t pid, const cr_ParameterValue *param
             i3_log(LOG_MASK_ERROR, "%s: Error 0x%x repacking", __FUNCTION__, eCode);
         }
     }
-    i3_log(LOG_MASK_REACH, "Wrote PID %d (index %d) to NVM", pid, key);
+    I3_LOG(LOG_MASK_REACH, "Wrote PID %d (index %d) to NVM", pid, key);
     return cr_ErrorCodes_NO_ERROR;
 }
 
@@ -477,8 +477,10 @@ static int write_param_to_nvm(const uint32_t pid, const cr_ParameterValue *param
 
 int crcb_ping_get_signal_strength(int32_t *rssi)
 {
-    // To Do: Use a SiLabs API to get RSSI
-    *rssi = -10;
+    // This call requests the latest RSSI
+    sl_bt_connection_get_rssi(rsl_get_connection());
+    // this call gets the previously reported RSSI
+    *rssi = rsl_get_rssi();
     return 0;
 }
 
@@ -486,7 +488,7 @@ int crcb_ping_get_signal_strength(int32_t *rssi)
  * File Support
  */
 #define NUM_FILES   2
-static cr_FileInfo sFiles[NUM_FILES] =
+static const cr_FileInfo sFiles[NUM_FILES] =
 {
     {
         0,                      // int32_t file_id; /* ID */
@@ -625,7 +627,7 @@ int crcb_write_file(const uint32_t fid,   // which file
                __FUNCTION__, fid);
         return cr_ErrorCodes_PERMISSION_DENIED;
     }
-    // i3_log_dump_buffer(LOG_MASK_FILES, "Received File Data", pData, bytes);
+    // LOG_DUMP_MASK(LOG_MASK_FILES, "Received File Data", pData, bytes);
     return 0;
 }
 
@@ -644,7 +646,7 @@ int crcb_erase_file(const uint32_t fid)
                __FUNCTION__, fid);
         return cr_ErrorCodes_PERMISSION_DENIED;
     }
-    i3_log(LOG_MASK_FILES, "Fake file erase of file %d.", fid);
+    I3_LOG(LOG_MASK_FILES, "Fake file erase of file %d.", fid);
     return 0;
 }
 
@@ -655,7 +657,7 @@ int crcb_erase_file(const uint32_t fid)
 #define NUM_COMMANDS    7
 
 uint8_t sCommandIndex = 0;
-cr_CommandInfo sCommands[NUM_COMMANDS] = 
+const cr_CommandInfo sCommands[NUM_COMMANDS] = 
 {
     {1,  "Enable remote CLI"},
     {2,  "Disable remote CLI"},
@@ -675,7 +677,7 @@ int crcb_command_discover_next(cr_CommandInfo *cmd_desc)
 {
     if (sCommandIndex >= NUM_COMMANDS)
     {
-        i3_log(LOG_MASK_REACH, "%s: Command index %d indicates discovery complete.",
+        I3_LOG(LOG_MASK_REACH, "%s: Command index %d indicates discovery complete.",
                __FUNCTION__, sCommandIndex);
         return cr_ErrorCodes_NO_DATA;
     }
@@ -760,7 +762,9 @@ int crcb_device_get_info(cr_DeviceInfoResponse *pDi)
 {
     // The app owns the memory here.
     // The address is returned so that the data can come from flash.
-    *pDi = test1_di;
+    // memcpy as the structure copy imposes a further address alignment requirement.
+    // *pDi = test1_di;
+    memcpy(pDi, &test1_di, sizeof(cr_DeviceInfoResponse));
     i3_log(LOG_MASK_ALWAYS, "%s: %s\n", __FUNCTION__, test1_di.device_name);
 
     sprintf(pDi->firmware_version, "%d.%d.%d", MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION);

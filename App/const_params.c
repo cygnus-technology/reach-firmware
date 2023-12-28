@@ -23,12 +23,13 @@
 
 // This is effectively a 'fake' parameter repository.
 // The init function makes it valid.
-#define NUM_PARAMS      15
-#define NUM_EX_PARAMS   4
+
+// Notice that parameter ID's are odd numbers.  This was done
+// to prove that they can be discontinuous.
 
 const cr_ParameterInfo  param_desc[NUM_PARAMS] = {
     { // [0]
-        .id =               1,
+        .id =               0,
         .data_type =        cr_ParameterDataType_UINT32,
         .size_in_bytes  =   0,
         .name =             "first param (1)",
@@ -47,7 +48,7 @@ const cr_ParameterInfo  param_desc[NUM_PARAMS] = {
 
     },
     { // [1]
-        .id =               3,
+        .id =               1,
         .data_type =        cr_ParameterDataType_INT32,
         .size_in_bytes  =   0,
         .name =             "param #two",
@@ -64,7 +65,7 @@ const cr_ParameterInfo  param_desc[NUM_PARAMS] = {
         .storage_location = cr_StorageLocation_RAM_EXTENDED
     },
     { // [2]
-        .id =               5,
+        .id =               2,
         .data_type =        cr_ParameterDataType_FLOAT32,
         .size_in_bytes  =   0,
         .name =             "fifth param",
@@ -81,7 +82,7 @@ const cr_ParameterInfo  param_desc[NUM_PARAMS] = {
         .storage_location = cr_StorageLocation_NONVOLATILE
     },
     { // [3]
-        .id =               7,
+        .id =               3,
         .data_type =        cr_ParameterDataType_UINT64,
         .size_in_bytes  =   0,
         .name =             "first uint64",
@@ -104,7 +105,7 @@ const cr_ParameterInfo  param_desc[NUM_PARAMS] = {
         .storage_location = cr_StorageLocation_NONVOLATILE
     },
     { // [4]
-        .id =               9,
+        .id =               4,
         .data_type =        cr_ParameterDataType_INT64,
         .size_in_bytes  =   0,
         .name =             "param #nine",
@@ -121,7 +122,7 @@ const cr_ParameterInfo  param_desc[NUM_PARAMS] = {
         .storage_location = cr_StorageLocation_RAM 
     },
     { // [5]
-        .id =               11,
+        .id =               5,
         .data_type =        cr_ParameterDataType_FLOAT64,
         .size_in_bytes  =   0,
         .name =             "eleventh param",
@@ -138,7 +139,7 @@ const cr_ParameterInfo  param_desc[NUM_PARAMS] = {
         .storage_location = cr_StorageLocation_RAM 
     },
     { // [6]
-        .id =               13,
+        .id =               6,
         .data_type =        cr_ParameterDataType_BOOL,
         .size_in_bytes  =   0,
         .name =             "first bool",
@@ -155,7 +156,7 @@ const cr_ParameterInfo  param_desc[NUM_PARAMS] = {
         .storage_location = cr_StorageLocation_RAM 
     },
     { // [7]
-        .id =               15,
+        .id =               7,
         .data_type =        cr_ParameterDataType_STRING,
         .size_in_bytes  =   0,
         .name =             "param #nine",
@@ -172,7 +173,7 @@ const cr_ParameterInfo  param_desc[NUM_PARAMS] = {
         .storage_location = cr_StorageLocation_NONVOLATILE
     },
     { // [8]
-        .id =               17,
+        .id =               8,
         .data_type =        cr_ParameterDataType_ENUMERATION,
         .size_in_bytes  =   0,
         .name =             "eleventh param",
@@ -189,7 +190,7 @@ const cr_ParameterInfo  param_desc[NUM_PARAMS] = {
         .storage_location = cr_StorageLocation_NONVOLATILE
     },
     { // [9]
-        .id =               19,
+        .id =               9,
         .data_type =        cr_ParameterDataType_BIT_FIELD,
         .size_in_bytes  =   0,
         .name =             "enable bits",
@@ -206,7 +207,7 @@ const cr_ParameterInfo  param_desc[NUM_PARAMS] = {
         .storage_location = cr_StorageLocation_NONVOLATILE
     },                      
     { // [10]               
-        .id =               21,
+        .id =               10,
         .data_type =        cr_ParameterDataType_BYTE_ARRAY,
         .size_in_bytes  =   0,
         .name =             "param 21",
@@ -223,7 +224,7 @@ const cr_ParameterInfo  param_desc[NUM_PARAMS] = {
         .storage_location = cr_StorageLocation_NONVOLATILE
     },
     { // [11]
-        .id =               23,
+        .id =               11,
         .data_type =        cr_ParameterDataType_INT32,
         .size_in_bytes  =   0,
         .name =             "param #23",
@@ -240,7 +241,7 @@ const cr_ParameterInfo  param_desc[NUM_PARAMS] = {
         .storage_location = cr_StorageLocation_RAM_EXTENDED
     },
     { // [12]
-        .id =               25,
+        .id =               12,
         .data_type =        cr_ParameterDataType_FLOAT32,
         .size_in_bytes  =   0,
         .name =             "25th param",
@@ -257,7 +258,7 @@ const cr_ParameterInfo  param_desc[NUM_PARAMS] = {
         .storage_location = cr_StorageLocation_NONVOLATILE
     },
     { // [13]
-        .id =               27,
+        .id =               13,
         .data_type =        cr_ParameterDataType_UINT64,
         .size_in_bytes  =   0,
         .name =             "p27 uint64",
@@ -274,7 +275,7 @@ const cr_ParameterInfo  param_desc[NUM_PARAMS] = {
         .storage_location = cr_StorageLocation_NONVOLATILE
     },
     { // [14]
-        .id =               29,
+        .id =               14,
         .data_type =        cr_ParameterDataType_INT64,
         .size_in_bytes  =   0,
         .name =             "param #29",
@@ -289,7 +290,347 @@ const cr_ParameterInfo  param_desc[NUM_PARAMS] = {
         .range_max =        68719476735,
         .default_value =    -68719476736,
         .storage_location = cr_StorageLocation_RAM
-    }
+    },
+    { // [15]
+        .id =               15,
+        .data_type =        cr_ParameterDataType_INT32,
+        .size_in_bytes  =   0,
+        .name =             "param #31",
+        .access =           cr_AccessLevel_READ,
+        .description =      "Read only,RAM-EX",
+        .units =            "signed int",
+        .has_description =  true,
+        .has_range_min =    true,
+        .has_range_max =    true,
+        .has_default_value = false,
+        .range_min =        -1024,
+        .range_max =        1023,
+        .default_value =    1,
+        .storage_location = cr_StorageLocation_RAM_EXTENDED
+    },
+    { // [16]
+        .id =               16,
+        .data_type =        cr_ParameterDataType_INT32,
+        .size_in_bytes  =   0,
+        .name =             "id(x) 16",
+        .access =           cr_AccessLevel_READ,
+        .description =      "Read only,RAM",
+        .units =            "signed int",
+        .has_description =  true,
+        .has_range_min =    true,
+        .has_range_max =    true,
+        .has_default_value = false,
+        .range_min =        -1024,
+        .range_max =        1023,
+        .default_value =    1,
+        .storage_location = cr_StorageLocation_RAM
+    },
+    { // [17]
+        .id =               17,
+        .data_type =        cr_ParameterDataType_INT32,
+        .size_in_bytes  =   0,
+        .name =             "id(x) 17",
+        .access =           cr_AccessLevel_READ,
+        .description =      "Read only,RAM",
+        .units =            "signed int",
+        .has_description =  true,
+        .has_range_min =    true,
+        .has_range_max =    true,
+        .has_default_value = false,
+        .range_min =        -1024,
+        .range_max =        1023,
+        .default_value =    1,
+        .storage_location = cr_StorageLocation_RAM
+    },
+    { // [18]
+        .id =               18,
+        .data_type =        cr_ParameterDataType_INT32,
+        .size_in_bytes  =   0,
+        .name =             "id(x) 18",
+        .access =           cr_AccessLevel_READ,
+        .description =      "Read only,RAM",
+        .units =            "signed int",
+        .has_description =  true,
+        .has_range_min =    true,
+        .has_range_max =    true,
+        .has_default_value = false,
+        .range_min =        -1024,
+        .range_max =        1023,
+        .default_value =    1,
+        .storage_location = cr_StorageLocation_RAM
+    },
+    { // [19]
+        .id =               19,
+        .data_type =        cr_ParameterDataType_INT32,
+        .size_in_bytes  =   0,
+        .name =             "id(x) 19",
+        .access =           cr_AccessLevel_READ,
+        .description =      "Read only,RAM",
+        .units =            "signed int",
+        .has_description =  true,
+        .has_range_min =    true,
+        .has_range_max =    true,
+        .has_default_value = false,
+        .range_min =        -1024,
+        .range_max =        1023,
+        .default_value =    1,
+        .storage_location = cr_StorageLocation_RAM
+    },
+    { // [20]
+        .id =               20,
+        .data_type =        cr_ParameterDataType_INT32,
+        .size_in_bytes  =   0,
+        .name =             "id(x) 20",
+        .access =           cr_AccessLevel_READ,
+        .description =      "Read only,RAM",
+        .units =            "signed int",
+        .has_description =  true,
+        .has_range_min =    true,
+        .has_range_max =    true,
+        .has_default_value = false,
+        .range_min =        -1024,
+        .range_max =        1023,
+        .default_value =    1,
+        .storage_location = cr_StorageLocation_RAM
+    },
+    { // [21]
+        .id =               21,
+        .data_type =        cr_ParameterDataType_INT32,
+        .size_in_bytes  =   0,
+        .name =             "id(x) 21",
+        .access =           cr_AccessLevel_READ,
+        .description =      "Read only,RAM",
+        .units =            "signed int",
+        .has_description =  true,
+        .has_range_min =    true,
+        .has_range_max =    true,
+        .has_default_value = false,
+        .range_min =        -1024,
+        .range_max =        1023,
+        .default_value =    1,
+        .storage_location = cr_StorageLocation_RAM
+    },
+    { // [22]
+        .id =               22,
+        .data_type =        cr_ParameterDataType_INT32,
+        .size_in_bytes  =   0,
+        .name =             "id(x) 22",
+        .access =           cr_AccessLevel_READ,
+        .description =      "Read only,RAM",
+        .units =            "signed int",
+        .has_description =  true,
+        .has_range_min =    true,
+        .has_range_max =    true,
+        .has_default_value = false,
+        .range_min =        -1024,
+        .range_max =        1023,
+        .default_value =    1,
+        .storage_location = cr_StorageLocation_RAM
+    },
+    { // [23]
+        .id =               23,
+        .data_type =        cr_ParameterDataType_INT32,
+        .size_in_bytes  =   0,
+        .name =             "id(x) 23",
+        .access =           cr_AccessLevel_READ,
+        .description =      "Read only,RAM",
+        .units =            "signed int",
+        .has_description =  true,
+        .has_range_min =    true,
+        .has_range_max =    true,
+        .has_default_value = false,
+        .range_min =        -1024,
+        .range_max =        1023,
+        .default_value =    1,
+        .storage_location = cr_StorageLocation_RAM
+    },
+    { // [24]
+        .id =               24,
+        .data_type =        cr_ParameterDataType_INT32,
+        .size_in_bytes  =   0,
+        .name =             "id(x) 24",
+        .access =           cr_AccessLevel_READ,
+        .description =      "Read only,RAM-EX",
+        .units =            "signed int",
+        .has_description =  true,
+        .has_range_min =    true,
+        .has_range_max =    true,
+        .has_default_value = false,
+        .range_min =        -1024,
+        .range_max =        1023,
+        .default_value =    1,
+        .storage_location = cr_StorageLocation_RAM
+    },
+    { // [25]
+        .id =               25,
+        .data_type =        cr_ParameterDataType_INT32,
+        .size_in_bytes  =   0,
+        .name =             "id(x) 25",
+        .access =           cr_AccessLevel_READ,
+        .description =      "Read only,RAM",
+        .units =            "signed int",
+        .has_description =  true,
+        .has_range_min =    true,
+        .has_range_max =    true,
+        .has_default_value = false,
+        .range_min =        -1024,
+        .range_max =        1023,
+        .default_value =    1,
+        .storage_location = cr_StorageLocation_RAM
+    },
+    { // [26]
+        .id =               26,
+        .data_type =        cr_ParameterDataType_INT32,
+        .size_in_bytes  =   0,
+        .name =             "id(x) 26",
+        .access =           cr_AccessLevel_READ,
+        .description =      "Read only,RAM",
+        .units =            "signed int",
+        .has_description =  true,
+        .has_range_min =    true,
+        .has_range_max =    true,
+        .has_default_value = false,
+        .range_min =        -1024,
+        .range_max =        1023,
+        .default_value =    1,
+        .storage_location = cr_StorageLocation_RAM
+    },
+    { // [27]
+        .id =               27,
+        .data_type =        cr_ParameterDataType_INT32,
+        .size_in_bytes  =   0,
+        .name =             "id(x) 27",
+        .access =           cr_AccessLevel_READ,
+        .description =      "Read only,RAM",
+        .units =            "signed int",
+        .has_description =  true,
+        .has_range_min =    true,
+        .has_range_max =    true,
+        .has_default_value = false,
+        .range_min =        -1024,
+        .range_max =        1023,
+        .default_value =    1,
+        .storage_location = cr_StorageLocation_RAM
+    },
+    { // [28]
+        .id =               28,
+        .data_type =        cr_ParameterDataType_INT32,
+        .size_in_bytes  =   0,
+        .name =             "id(x) 28",
+        .access =           cr_AccessLevel_READ,
+        .description =      "Read only,RAM",
+        .units =            "signed int",
+        .has_description =  true,
+        .has_range_min =    true,
+        .has_range_max =    true,
+        .has_default_value = false,
+        .range_min =        -1024,
+        .range_max =        1023,
+        .default_value =    1,
+        .storage_location = cr_StorageLocation_RAM
+    },
+    { // [29]
+        .id =               29,
+        .data_type =        cr_ParameterDataType_INT32,
+        .size_in_bytes  =   0,
+        .name =             "id(x) 29",
+        .access =           cr_AccessLevel_READ,
+        .description =      "Read only,RAM",
+        .units =            "signed int",
+        .has_description =  true,
+        .has_range_min =    true,
+        .has_range_max =    true,
+        .has_default_value = false,
+        .range_min =        -1024,
+        .range_max =        1023,
+        .default_value =    1,
+        .storage_location = cr_StorageLocation_RAM
+    },
+    { // [30]
+        .id =               30,
+        .data_type =        cr_ParameterDataType_INT32,
+        .size_in_bytes  =   0,
+        .name =             "id(x) 30",
+        .access =           cr_AccessLevel_READ,
+        .description =      "Read only,RAM",
+        .units =            "signed int",
+        .has_description =  true,
+        .has_range_min =    true,
+        .has_range_max =    true,
+        .has_default_value = false,
+        .range_min =        -1024,
+        .range_max =        1023,
+        .default_value =    1,
+        .storage_location = cr_StorageLocation_RAM
+    },
+    { // [31]
+        .id =               31,
+        .data_type =        cr_ParameterDataType_INT32,
+        .size_in_bytes  =   0,
+        .name =             "id(x) 31",
+        .access =           cr_AccessLevel_READ,
+        .description =      "Read only,RAM",
+        .units =            "signed int",
+        .has_description =  true,
+        .has_range_min =    true,
+        .has_range_max =    true,
+        .has_default_value = false,
+        .range_min =        -1024,
+        .range_max =        1023,
+        .default_value =    1,
+        .storage_location = cr_StorageLocation_RAM
+    },
+    { // [32]
+        .id =               32,
+        .data_type =        cr_ParameterDataType_INT32,
+        .size_in_bytes  =   0,
+        .name =             "id(x) 32",
+        .access =           cr_AccessLevel_READ,
+        .description =      "Read only,RAM",
+        .units =            "signed int",
+        .has_description =  true,
+        .has_range_min =    true,
+        .has_range_max =    true,
+        .has_default_value = false,
+        .range_min =        -1024,
+        .range_max =        1023,
+        .default_value =    1,
+        .storage_location = cr_StorageLocation_RAM
+    },
+    { // [33]
+        .id =               33,
+        .data_type =        cr_ParameterDataType_INT32,
+        .size_in_bytes  =   0,
+        .name =             "id(x) 33",
+        .access =           cr_AccessLevel_READ,
+        .description =      "Read only,RAM",
+        .units =            "signed int",
+        .has_description =  true,
+        .has_range_min =    true,
+        .has_range_max =    true,
+        .has_default_value = false,
+        .range_min =        -1024,
+        .range_max =        1023,
+        .default_value =    1,
+        .storage_location = cr_StorageLocation_RAM
+    },
+    { // [34]
+        .id =               34,
+        .data_type =        cr_ParameterDataType_INT32,
+        .size_in_bytes  =   0,
+        .name =             "id(x) 34",
+        .access =           cr_AccessLevel_READ,
+        .description =      "Read only,RAM",
+        .units =            "signed int",
+        .has_description =  true,
+        .has_range_min =    true,
+        .has_range_max =    true,
+        .has_default_value = false,
+        .range_min =        -1024,
+        .range_max =        1023,
+        .default_value =    1,
+        .storage_location = cr_StorageLocation_RAM
+    },
 };
 
 

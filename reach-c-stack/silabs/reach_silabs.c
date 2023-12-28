@@ -29,20 +29,17 @@
 #include "app_assert.h"
 #include "em_cmu.h"
 #include "gatt_db.h"
+#include "nvm3_default.h"
 #include "app.h"
-
-// When defined we attempt to advertise a longer name.
-// It doesn't yet do what is required.
-// #define EXTENDED_ADVERTISING
 
 static uint8_t  sRsl_ble_connection = 0;
 static uint16_t sRsl_ble_characteristic = 0;
 static bool     sRsl_ble_subscribed = false;
+static int8_t   sRsl_rssi = 0;
 
 static uint32_t sNotifyCount = 0;
 static uint32_t sNotifyDelay = 0;
 static uint32_t sNotifyMaxDelay = 0;
-
 
 void rsl_inform_connection(uint8_t connection, uint16_t characteristic)
 {
@@ -50,6 +47,16 @@ void rsl_inform_connection(uint8_t connection, uint16_t characteristic)
   sRsl_ble_characteristic = characteristic;
   if (connection == 0)
       sRsl_ble_subscribed = false;
+}
+
+uint8_t rsl_get_connection(void)
+{
+    return sRsl_ble_connection; 
+}
+
+int rsl_get_rssi(void)
+{
+    return (int)sRsl_rssi;
 }
 
 void rsl_inform_subscribed(bool subscribed)
@@ -64,8 +71,8 @@ int rsl_stats()
     extern char gRfLoop;
 
     int avg = sNotifyDelay/sNotifyCount;
-    i3_log(LOG_MASK_BLE, "  wf: %d bytes, %d packets.", gBytesWritten, gWfPacketCount);
-    i3_log(LOG_MASK_BLE, "  rf: %d notifications, in groups of %d, retries avg %d, max %d\n",
+    I3_LOG(LOG_MASK_BLE, "  wf: %d bytes, %d packets.", gBytesWritten, gWfPacketCount);
+    I3_LOG(LOG_MASK_BLE, "  rf: %d notifications, in groups of %d, retries avg %d, max %d\n",
                  sNotifyCount, gRfLoop, avg, sNotifyMaxDelay);
 
     sNotifyCount = 0;
@@ -123,6 +130,7 @@ int crcb_cli_enter(const char *ins)
         i3_log(LOG_MASK_ALWAYS, TEXT_CLI "  rcli: Remote CLI <on|off>");
         i3_log(LOG_MASK_ALWAYS, TEXT_CLI "  phy : phy <1|2> BLE PHY 1M or 2M");
         i3_log(LOG_MASK_ALWAYS, TEXT_CLI "  nvm : nvm <?|clear|init>");
+        i3_log(LOG_MASK_ALWAYS, TEXT_CLI "  sn  : read or set serial number in NVM. sn <?|clear|N>");
         i3_log(LOG_MASK_ALWAYS | LOG_MASK_BARE, TEXT_CLI ">");
         return 0;
     }
@@ -141,6 +149,8 @@ int crcb_cli_enter(const char *ins)
         cli_phy(NULL);
     else if (!strncmp("nvm", ins, 3))
         cli_nvm(NULL);
+    else if (!strncmp("sn", ins, 2))
+        cli_sn(NULL);
     else
         i3_log(LOG_MASK_ALWAYS | LOG_MASK_BARE, TEXT_CLI 
                "CLI command '%s' not recognized (0x%x).", ins, *ins);
@@ -153,7 +163,7 @@ int rsl_notify_client(uint8_t *data, size_t len)
 {
     sl_status_t rval;
 
-    i3_log(LOG_MASK_BLE, "%s(%d)", __FUNCTION__, len);
+    I3_LOG(LOG_MASK_BLE, "%s(%d)", __FUNCTION__, len);
     sNotifyCount++;
     uint32_t loopCount = 0;
     do
@@ -181,20 +191,20 @@ int crcb_send_coded_response(const uint8_t *respBuf, size_t respSize)
 {
     if (respSize == 0)
     {
-        i3_log(LOG_MASK_REACH, "%s: No bytes to send.  ", __FUNCTION__);
+        I3_LOG(LOG_MASK_REACH, "%s: No bytes to send.  ", __FUNCTION__);
         return cr_ErrorCodes_NO_ERROR;
     }
     int rval = 0;
-    i3_log(LOG_MASK_REACH, TEXT_GREEN "%s: send %d bytes.", __FUNCTION__, respSize);
+    I3_LOG(LOG_MASK_REACH, TEXT_GREEN "%s: send %d bytes.", __FUNCTION__, respSize);
 
     if (sRsl_ble_subscribed)
     {   int s1;
-        i3_log(LOG_MASK_BLE, "%s: call rsl_notify_client() with %d bytes", __FUNCTION__, respSize);
+        I3_LOG(LOG_MASK_BLE, "%s: call rsl_notify_client() with %d bytes", __FUNCTION__, respSize);
         s1 = rsl_notify_client((uint8_t*)respBuf, respSize);
         switch (s1)
         {
         case SL_STATUS_OK:  // 0
-            i3_log(LOG_MASK_BLE, "Sent notification %d bytes, OK.", respSize);
+            I3_LOG(LOG_MASK_BLE, "Sent notification %d bytes, OK.", respSize);
             rval = 0;
             break;
         case SL_STATUS_COMMAND_TOO_LONG:
@@ -272,95 +282,11 @@ void rsl_app_process_action(void)
     cr_process(timestamp);
 }
 
-#ifdef EXTENDED_ADVERTISING
-
-// CUSTOM_ADVERTISING data
-#define UUID_LEN 16
-#define NAME_LEN 16
-typedef struct
-{
-    uint8_t flags_len;            // Length of the Flags field.
-    uint8_t flags_type;           // Type of the Flags field.
-    uint8_t flags;                // Flags field.
-    uint8_t longname_len;         // Length of the Name field.
-    uint8_t longname_type;        // Type of the long Name field.
-    char    longname[NAME_LEN];   // Name field.
-    uint8_t len_uuid;
-    uint8_t type_uuid;
-    uint8_t uuid[UUID_LEN];
-
-} adv_data_s;
-
-adv_data_s sAdv_data =
-{
-    // Flag bits - See Bluetooth 4.0 Core Specification , Volume 3, Appendix C, 18.1 for more details on flags.
-    2,      // Length of field.
-    0x01,   // Type of field.
-    0x06,   // Flags: LE General Discoverable Mode, BR/EDR is disabled.
-
-    // Long Name
-    14,     // Length of field. (strlen+1)
-    0x09,   // Type of field:  LOCAL_NAME
-    "Advertisement",
-
-    // Reach characteristic UUID
-    0x11,   // Length of field.
-    0x07,   // complete List of 128-bit Service Class UUIDs
-    #define REACH_UUID "edd59269-79b3-4ec2-a6a2-89bfb640f930"  // Reach ID
-    {0x30,0xF9,0x40,0xB6,0xBF,0x89,0xA2,0x26,
-    0xC2,0x0E,0xB3,0x79,0x69,0x92,0xD5,0xED},
-};
-
-#define TEST_EXT_ELE_LENGTH 200
-void setup_ext_adv(uint8_t handle)
-{
-  sl_status_t sc;
-
-  // Set advertising data
-  sc = sl_bt_extended_advertiser_set_data(handle, sizeof(sAdv_data), (uint8_t*)&sAdv_data);
-  app_assert(sc == SL_STATUS_OK,
-                      "[E: 0x%04x] Failed to set advertising data\n",
-                      (int)sc);
-}
-
-void setup_start_ext_adv(uint8_t handle)
-{
-  sl_status_t sc;
-  // Set advertising interval to 100ms.
-  sc = sl_bt_advertiser_set_timing(
-    handle,
-    160, // min. adv. interval (milliseconds * 1.6)
-    160, // max. adv. interval (milliseconds * 1.6)
-    0,   // adv. duration
-    0);  // max. num. adv. events
-  app_assert(sc == SL_STATUS_OK,
-                "[E: 0x%04x] Failed to set advertising timing\n",
-                (int)sc);
-
-  setup_ext_adv(handle);
-
-  sc = sl_bt_extended_advertiser_start(
-      handle,
-      sl_bt_extended_advertiser_connectable,
-      // sl_bt_extended_advertiser_non_connectable,
-      0);
-  app_assert(sc == SL_STATUS_OK,
-                  "[E: 0x%04x] Failed to start advertising\n",
-                  (int)sc);
-  /* Start general advertising and enable connections. */
-  i3_log(LOG_MASK_ALWAYS, "Start advertising.\r\n");
-}
-#else
-  extern sli_bt_gattdb_attribute_chrvalue_t gattdb_attribute_field_10;
-#endif // def EXTENDED_ADVERTISING
+extern sli_bt_gattdb_attribute_chrvalue_t gattdb_attribute_field_10;
 
 const char *rsl_get_advertised_name() 
 {
-  #ifdef EXTENDED_ADVERTISING
-    return sAdv_data.longname;
-  #else
     return (char*)(gattdb_attribute_field_10.data);
-  #endif // def EXTENDED_ADVERTISING
 }
 
 
@@ -393,7 +319,7 @@ void rsl_bt_on_event(sl_bt_msg_t *evt)
         uint8_t address_type;
         uint8_t sysId[8];
 
-        // i3_log(LOG_MASK_BLE, "sl_bt_evt_system_boot_id 0x%x", SL_BT_MSG_ID(evt->header));
+        // I3_LOG(LOG_MASK_BLE, "sl_bt_evt_system_boot_id 0x%x", SL_BT_MSG_ID(evt->header));
         // Extract unique ID from BT Address.
         sc = sl_bt_system_get_identity_address(&address, &address_type);
         app_assert_status(sc);
@@ -412,32 +338,31 @@ void rsl_bt_on_event(sl_bt_msg_t *evt)
                                                      sizeof(sysId),
                                                      sysId);
         app_assert_status(sc);
-        i3_log(LOG_MASK_BLE, "BLE system ID %02X:%02X:%02X:%02X:%02X:%02X",
+        I3_LOG(LOG_MASK_BLE, "BLE system ID %02X:%02X:%02X:%02X:%02X:%02X",
                sysId[0], sysId[1], sysId[2], sysId[5], sysId[6], sysId[7]);
 
-      
-      #ifdef EXTENDED_ADVERTISING
-        // most devices don't see such an extended advertisement.
-        // We need to make the long name scannable.
-        // Rewrite name
-        sAdv_data.longname_len = 1 +
-            snprintf((char *)(sAdv_data.longname),
-                     NAME_LEN,
-                     "Reacher %02X-%02X", sysId[6], sysId[7]);
-        i3_log(LOG_MASK_ALWAYS, TEXT_MAGENTA "Advertise extended name %s", sAdv_data.longname);
-
-        sc = sl_bt_advertiser_create_set(&advertising_set_handle);
-        app_assert_status(sc);
-
-        setup_start_ext_adv(advertising_set_handle);
-      #else
-        // Relies on setup from gatt database.
-        // seem to only be capable of 8 chars
-        gattdb_attribute_field_10.len =
-            snprintf((char*)(gattdb_attribute_field_10.data),
-                     gattdb_attribute_field_10.max_len,
-                     "Reach %02X", sysId[6]);
-        i3_log(LOG_MASK_ALWAYS, TEXT_YELLOW "Advertise non-extended name %s", gattdb_attribute_field_10.data);
+        // Give the device a unique name:
+        // gattdb_attribute_field_10 holds the device name.
+        // Check advertise in the generic access service to enable the long name.
+        memset(gattdb_attribute_field_10.data, 0, gattdb_attribute_field_10.max_len);
+        unsigned int sn = 0;
+        int rval = rsl_read_serial_number(&sn);
+        if (rval != 0) {
+            gattdb_attribute_field_10.len =
+                snprintf((char*)(gattdb_attribute_field_10.data),
+                         gattdb_attribute_field_10.max_len,
+                         "Reacher %02X:%02X:%02X", sysId[5], sysId[6], sysId[7]);
+        }
+        else {
+            gattdb_attribute_field_10.len =
+                snprintf((char*)(gattdb_attribute_field_10.data),
+                         gattdb_attribute_field_10.max_len,
+                         "Reacher SN-%u", sn);
+        }
+        i3_log(LOG_MASK_ALWAYS, TEXT_YELLOW "Advertise non-extended name %s, len %d of %d", 
+               gattdb_attribute_field_10.data, 
+               gattdb_attribute_field_10.len, 
+               gattdb_attribute_field_10.max_len);
 
         sc = sl_bt_advertiser_create_set(&advertising_set_handle);
         app_assert_status(sc);
@@ -458,7 +383,6 @@ void rsl_bt_on_event(sl_bt_msg_t *evt)
         sc = sl_bt_legacy_advertiser_start(advertising_set_handle, 
                                            sl_bt_advertiser_connectable_scannable);
         app_assert_status(sc);
-      #endif  // def EXTENDED_ADVERTISING
 
         break;
     }
@@ -466,16 +390,17 @@ void rsl_bt_on_event(sl_bt_msg_t *evt)
     // -------------------------------
     // This event indicates that a new connection was opened.
     case sl_bt_evt_connection_opened_id:
-        {
-            extern char gPhy;
+    {
+        extern char gPhy;
 
-            sl_bt_connection_set_preferred_phy(evt->data.evt_connection_opened.connection, gPhy, gPhy);
-            i3_log(LOG_MASK_ALWAYS, "Device connected to BLE with connection ID %u. %dM Phy requested",
-                   evt->data.evt_connection_opened.connection, gPhy);
+        sl_bt_connection_set_preferred_phy(evt->data.evt_connection_opened.connection, gPhy, gPhy);
+        i3_log(LOG_MASK_ALWAYS, "Device connected to BLE with connection ID %u. %dM Phy requested",
+               evt->data.evt_connection_opened.connection, gPhy);
 
-            rsl_inform_connection(evt->data.evt_connection_opened.connection, REACH_BLE_CHARICTERISTIC_ID);
-            break;
-        }
+        rsl_inform_connection(evt->data.evt_connection_opened.connection, REACH_BLE_CHARICTERISTIC_ID);
+        sl_bt_connection_get_rssi(evt->data.evt_connection_opened.connection);
+        break;
+    }
 
     // -------------------------------
     // This event indicates that a connection was closed.
@@ -503,7 +428,7 @@ void rsl_bt_on_event(sl_bt_msg_t *evt)
     case sl_bt_evt_gatt_server_user_read_request_id:
         {
             sl_bt_evt_gatt_server_user_read_request_t *data = &evt->data.evt_gatt_server_user_read_request;
-            i3_log(LOG_MASK_BLE, "sl_bt_evt_gatt_server_user_read_request_id %d", data->characteristic);
+            I3_LOG(LOG_MASK_BLE, "sl_bt_evt_gatt_server_user_read_request_id %d", data->characteristic);
 
             if (data->characteristic == REACH_BLE_CHARICTERISTIC_ID)
             {
@@ -511,7 +436,7 @@ void rsl_bt_on_event(sl_bt_msg_t *evt)
                 size_t resp_len;
 
                 cr_get_coded_response_buffer(&resp_buf, &resp_len);
-                i3_log(LOG_MASK_BLE, "Read request for reach. %d.", resp_len);
+                I3_LOG(LOG_MASK_BLE, "Read request for reach. %d.", resp_len);
 
                 int rval = sl_bt_gatt_server_send_user_read_response(data->connection,
                                                                      data->characteristic,
@@ -544,7 +469,7 @@ void rsl_bt_on_event(sl_bt_msg_t *evt)
                     }
                     else
                     {
-                        i3_log(LOG_MASK_BLE, "sl_bt_evt_gatt_server_characteristic_status_id: Unsubscribed from REACH notifications");
+                        I3_LOG(LOG_MASK_BLE, "sl_bt_evt_gatt_server_characteristic_status_id: Unsubscribed from REACH notifications");
                         rsl_inform_subscribed(false);
                     }
                 }
@@ -572,7 +497,7 @@ void rsl_bt_on_event(sl_bt_msg_t *evt)
         {
             sl_bt_evt_connection_parameters_t *data = &evt->data.evt_connection_parameters;
 
-            i3_log(LOG_MASK_BLE, "connection %d. interval %d. latency %d. timeout %d. secure %d, txsize %d",
+            I3_LOG(LOG_MASK_BLE, "connection %d. interval %d. latency %d. timeout %d. secure %d, txsize %d",
                    data->connection,    /**< Connection handle */
                    data->interval,      /**< Connection interval. Time = Value x 1.25 ms */
                    data->latency,       /**< Peripheral latency (how many connection intervals the peripheral can skip) */
@@ -611,10 +536,10 @@ void rsl_bt_on_event(sl_bt_msg_t *evt)
             break;
         }
     case sl_bt_evt_connection_remote_used_features_id:
-        // i3_log(LOG_MASK_BLE, "sl_bt_evt_connection_remote_used_features_id 0x%x", SL_BT_MSG_ID(evt->header));
+        // I3_LOG(LOG_MASK_BLE, "sl_bt_evt_connection_remote_used_features_id 0x%x", SL_BT_MSG_ID(evt->header));
         break;
     case sl_bt_evt_gatt_mtu_exchanged_id:
-        // i3_log(LOG_MASK_BLE, "sl_bt_evt_gatt_mtu_exchanged_id 0x%x", SL_BT_MSG_ID(evt->header));
+        // I3_LOG(LOG_MASK_BLE, "sl_bt_evt_gatt_mtu_exchanged_id 0x%x", SL_BT_MSG_ID(evt->header));
         break;
 
     case sl_bt_evt_gatt_server_attribute_value_id:
@@ -622,7 +547,7 @@ void rsl_bt_on_event(sl_bt_msg_t *evt)
             sl_bt_evt_gatt_server_attribute_value_t *data = &evt->data.evt_gatt_server_attribute_value;
             if (data->attribute == REACH_BLE_CHARICTERISTIC_ID)  // reach
             {
-                i3_log(LOG_MASK_BLE, "Attribute Write to reach.  Len %d", data->value.len);
+                I3_LOG(LOG_MASK_BLE, "Attribute Write to reach.  Len %d", data->value.len);
                 cr_store_coded_prompt(data->value.data, data->value.len);
                 break;
             }
@@ -637,13 +562,13 @@ void rsl_bt_on_event(sl_bt_msg_t *evt)
         }
   #if 1
     case sl_bt_evt_gatt_procedure_completed_id:
-        i3_log(LOG_MASK_BLE, "sl_bt_evt_gatt_procedure_completed_id 0x%x", SL_BT_MSG_ID(evt->header));
+        I3_LOG(LOG_MASK_BLE, "sl_bt_evt_gatt_procedure_completed_id 0x%x", SL_BT_MSG_ID(evt->header));
         break;
     case sl_bt_evt_user_message_to_host_id:
-        i3_log(LOG_MASK_BLE, "sl_bt_evt_user_message_to_host_id 0x%x", SL_BT_MSG_ID(evt->header));
+        I3_LOG(LOG_MASK_BLE, "sl_bt_evt_user_message_to_host_id 0x%x", SL_BT_MSG_ID(evt->header));
         break;
     case sl_bt_cmd_gatt_server_send_notification_id:
-        i3_log(LOG_MASK_BLE, "sl_bt_cmd_gatt_server_send_notification_id 0x%x", SL_BT_MSG_ID(evt->header));
+        I3_LOG(LOG_MASK_BLE, "sl_bt_cmd_gatt_server_send_notification_id 0x%x", SL_BT_MSG_ID(evt->header));
         break;
   #endif
         // -------------------------------
@@ -665,9 +590,42 @@ void rsl_bt_on_event(sl_bt_msg_t *evt)
         // normal when phy changes to 2M.
         break;
 
+    case sl_bt_evt_connection_rssi_id: 
+    {
+        // RSSI was requested, this is the response
+        sl_bt_evt_connection_rssi_t *data =  &evt->data.evt_connection_rssi;
+        // i3_log(LOG_MASK_WARN, "RSSI reports %d.",  data->rssi);
+        sRsl_rssi = data->rssi;   // overwrite the previous value
+        break;
+    }
+
     default:
         i3_log(LOG_MASK_ERROR, "Event 0x%x", SL_BT_MSG_ID(evt->header));
         break;
     }
+}
+
+int rsl_read_serial_number(unsigned int *sn)
+{
+    size_t dataLen;
+    uint32_t objectType;
+    Ecode_t eCode;
+
+    nvm3_getObjectInfo(nvm3_defaultHandle, REACH_SN_KEY, &objectType, &dataLen);
+    if (objectType != NVM3_OBJECTTYPE_DATA) {
+        i3_log(LOG_MASK_WARN, "NVM object type of SN key 0x%x failed, SN not read.", REACH_SN_KEY);
+        return -1;
+    }
+    if (dataLen != sizeof(unsigned int)) {
+        i3_log(LOG_MASK_WARN, "dataLen of SN is %d, not %d.", dataLen, sizeof(unsigned int));
+    }
+    eCode = nvm3_readData(nvm3_defaultHandle, REACH_SN_KEY, (uint8_t *)sn, sizeof(unsigned int));
+    if (ECODE_NVM3_OK != eCode) {
+        i3_log(LOG_MASK_ERROR, "NVM Read of SN key 0x%x failed with 0x%x.", 
+           REACH_SN_KEY, eCode);
+        return -2;
+    }
+    return 0;
+
 }
 

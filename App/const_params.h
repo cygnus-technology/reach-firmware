@@ -16,7 +16,10 @@
 #ifndef _CONST_PARAMS_H
 #define _CONST_PARAMS_H
 
-#define NUM_PARAMS      15
+// There are 35 params defined in the .c file.
+// One is write only so it is not transmitted.
+// Set this to 34 to go over the 32 param request size. 
+#define NUM_PARAMS      33  
 #define NUM_EX_PARAMS   4
 
 extern const cr_ParameterInfo  param_desc[NUM_PARAMS];

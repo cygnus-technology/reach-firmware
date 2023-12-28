@@ -23,6 +23,17 @@
 
 // Define this to enable remote CLI via a buffer.
 #define ENABLE_REMOTE_CLI
+#ifdef ENABLE_REMOTE_CLI
+  // If false use a command to enable it.
+  #define REMOTE_CLI_ECHO_ON_DEFAULT    false
+#endif
+
+// Define this to be a 32 bit number that must be provided to access the device.
+// #define APP_REQUIRED_CHALLENGE_KEY  0x1020304
+
+// Define this to be a 32 bit number that must be provided to access a longer
+// list of parameters.
+// #define APP_REQUIRED_PARAMETER_KEY  0x9080706
 
 #include "reach.pb.h"
 
