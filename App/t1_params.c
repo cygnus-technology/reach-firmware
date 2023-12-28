@@ -477,10 +477,7 @@ static int write_param_to_nvm(const uint32_t pid, const cr_ParameterValue *param
 
 int crcb_ping_get_signal_strength(int32_t *rssi)
 {
-    // This call requests the latest RSSI
-    sl_bt_connection_get_rssi(rsl_get_connection());
-    // this call gets the previously reported RSSI
-    *rssi = rsl_get_rssi();
+    sl_bt_connection_get_median_rssi(rsl_get_connection(), rssi);
     return 0;
 }
 
