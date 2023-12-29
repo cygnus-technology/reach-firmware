@@ -49,6 +49,11 @@
 #include "const_params.h"
 #include "reach_silabs.h"
 
+// For LED:
+#include "sl_simple_led.h"
+#include "em_gpio.h"
+#include "sl_simple_led_led0_config.h"
+
 #define MSG_BUFFER_SIZE	256
 
 // This is effectively a 'fake' parameter repository.
@@ -58,9 +63,14 @@ static cr_ParameterValue sCr_param_val[NUM_PARAMS];
 static int read_param_from_nvm(const uint32_t pid, cr_ParameterValue *param);
 static int write_param_to_nvm(const uint32_t pid, const cr_ParameterValue *param);
 
+extern sl_led_t sl_led_led0;
+extern void sl_simple_led_init_instances(void);
+
 void init_param_repo()
 {
     int rval = 0;
+    sl_simple_led_init_instances();
+
     for (int i=0; i<NUM_PARAMS; i++)
     {
         sCr_param_val[i].parameter_id = param_desc[i].id;
@@ -71,30 +81,44 @@ void init_param_repo()
         case cr_ParameterDataType_UINT32: // pid 1, 23
             sCr_param_val[i].value.uint32_value = 1984;
             sCr_param_val[i].which_value = cr_ParameterValue_uint32_value_tag;
+            if (param_desc[i].has_default_value) 
+                sCr_param_val[i].value.uint32_value = (uint32_t)param_desc[i].default_value;
             break;
         case cr_ParameterDataType_INT32: // pid 3, 25
             sCr_param_val[i].value.sint32_value = -1999;
             sCr_param_val[i].which_value = cr_ParameterValue_sint32_value_tag;
+            if (param_desc[i].has_default_value) 
+                sCr_param_val[i].value.sint32_value = (int32_t)param_desc[i].default_value;
             break;
         case cr_ParameterDataType_FLOAT32: // pid 5, 27
             sCr_param_val[i].value.float32_value = 0.993;
             sCr_param_val[i].which_value = cr_ParameterValue_float32_value_tag;
+            if (param_desc[i].has_default_value) 
+                sCr_param_val[i].value.float32_value = (float)param_desc[i].default_value;
             break;
         case cr_ParameterDataType_UINT64:  // pid 7, 29
             sCr_param_val[i].value.uint64_value = 441;
             sCr_param_val[i].which_value = cr_ParameterValue_uint64_value_tag;
+            if (param_desc[i].has_default_value) 
+                sCr_param_val[i].value.uint64_value = (uint64_t)param_desc[i].default_value;
             break;
         case cr_ParameterDataType_INT64:  // pid 9
             sCr_param_val[i].value.sint64_value = -10853;
             sCr_param_val[i].which_value = cr_ParameterValue_sint64_value_tag;
+            if (param_desc[i].has_default_value) 
+                sCr_param_val[i].value.sint64_value = (int64_t)param_desc[i].default_value;
             break;
         case cr_ParameterDataType_FLOAT64:  // pid 11
             sCr_param_val[i].value.float64_value = 0.51111111111;
             sCr_param_val[i].which_value = cr_ParameterValue_float64_value_tag;
+            if (param_desc[i].has_default_value) 
+                sCr_param_val[i].value.float64_value = param_desc[i].default_value;
             break;
         case cr_ParameterDataType_BOOL:  // pid 13
             sCr_param_val[i].value.bool_value = true;
             sCr_param_val[i].which_value = cr_ParameterValue_bool_value_tag;
+            if (param_desc[i].has_default_value) 
+                sCr_param_val[i].value.bool_value = param_desc[i].default_value;
             break;
         case cr_ParameterDataType_STRING:  // pid 15
             sprintf(sCr_param_val[i].value.string_value, "Flea bag");
@@ -103,10 +127,14 @@ void init_param_repo()
         case cr_ParameterDataType_ENUMERATION:  // 17
             sCr_param_val[i].value.enum_value = 3;
             sCr_param_val[i].which_value = cr_ParameterValue_enum_value_tag;
+            if (param_desc[i].has_default_value) 
+                sCr_param_val[i].value.enum_value = param_desc[i].default_value;
             break;
         case cr_ParameterDataType_BIT_FIELD:  // 19
             sCr_param_val[i].value.bitfield_value = 0xDEAD;
             sCr_param_val[i].which_value = cr_ParameterValue_bitfield_value_tag;
+            if (param_desc[i].has_default_value) 
+                sCr_param_val[i].value.bitfield_value = param_desc[i].default_value;
             break;
         case cr_ParameterDataType_BYTE_ARRAY:  // 21
             sprintf((char*)sCr_param_val[i].value.bytes_value.bytes, "a byte array");
@@ -144,6 +172,13 @@ void init_param_repo()
         }
 
     } // end for
+
+    // bool controls LED.
+    if (sCr_param_val[6].value.bool_value) 
+        sl_simple_led_turn_on(&sl_led_led0);
+    else
+        sl_simple_led_turn_off(&sl_led_led0);
+
 }
 
 // Populate a parameter value structure
@@ -164,10 +199,12 @@ int crcb_parameter_read(const uint32_t pid, cr_ParameterValue *data)
 int crcb_parameter_write(const uint32_t pid, const cr_ParameterValue *data)
 {
     int rval = 0;
+    int pid_index;
 
     for (int i=0; i<NUM_PARAMS; i++) {
         if (sCr_param_val[i].parameter_id == pid) 
         {
+            pid_index = i;
             I3_LOG(LOG_MASK_PARAMS, "Write param[%d], pid %d (%d)", 
                    i, pid, data->parameter_id);
             I3_LOG(LOG_MASK_PARAMS, "  timestamp %d", data->timestamp);
@@ -235,6 +272,15 @@ int crcb_parameter_write(const uint32_t pid, const cr_ParameterValue *data)
                 rval = 1;
                 break;
             }  // end switch
+
+            // act on specific writes
+            if (pid == 13) {
+                // bool controls LED.
+                if (sCr_param_val[pid_index].value.bool_value)
+                    sl_simple_led_turn_on(&sl_led_led0);
+                else
+                    sl_simple_led_turn_off(&sl_led_led0);
+            }
 
             if (rval == 0) {
 
@@ -760,7 +806,7 @@ const cr_DeviceInfoResponse test1_di =
     .manufacturer           = "i3 Product Development",
     .device_description     = "This is a test of Jack Reacher's System.",
     .firmware_version       = "-1.-1.-1", // to be overwritten
-    .max_message_size       = 244,
+    // .max_message_size       = 244,
   #ifdef ENABLE_REMOTE_CLI
     .services = cr_ServiceIds_PARAMETER_REPO + cr_ServiceIds_FILES + cr_ServiceIds_COMMANDS + cr_ServiceIds_CLI,
   #else
@@ -770,9 +816,9 @@ const cr_DeviceInfoResponse test1_di =
     .has_application_identifier = 0,  // false
     .application_identifier     = {0},
     .endpoints                  = 0,
-    .parameter_buffer_count     = REACH_PARAM_BUFFER_COUNT,
-    .num_medium_structs_in_msg  = REACH_NUM_MEDIUM_STRUCTS_IN_MESSAGE,
-    .big_data_buffer_size       = REACH_BIG_DATA_BUFFER_LEN
+    // .parameter_buffer_count     = REACH_PARAM_BUFFER_COUNT,
+    // .num_medium_structs_in_msg  = REACH_NUM_MEDIUM_STRUCTS_IN_MESSAGE,
+    // .big_data_buffer_size       = REACH_BIG_DATA_BUFFER_LEN
 };
 
 

@@ -53,6 +53,9 @@
 // should come from GATT DB.
 #define REACH_BLE_CHARICTERISTIC_ID   gattdb_REACH
 
+// Cyan is OK on both white and black backgrounds
+#define TEXT_CLI   TEXT_CYAN
+
 void rsl_init();
 int rsl_stats();
 
