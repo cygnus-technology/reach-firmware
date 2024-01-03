@@ -85,6 +85,7 @@ void rsl_bt_on_event(sl_bt_msg_t *evt);
 const char *rsl_get_advertised_name();
 
 int rsl_read_serial_number(unsigned int *sn);
+int rsl_write_serial_number(unsigned int sn);
 
 /**************************************************************************//**
  * Command line handlers:
