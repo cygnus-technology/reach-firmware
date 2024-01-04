@@ -41,7 +41,6 @@
 
 #include "cr_stack.h"
 #include "i3_log.h"
-// #include "reach_silabs.h"
 
 #define NUM_FILES   2
 static const cr_FileInfo sFiles[NUM_FILES] =
@@ -61,6 +60,8 @@ static const cr_FileInfo sFiles[NUM_FILES] =
         cr_StorageLocation_NONVOLATILE  // cr_StorageLocation storage_location;
     }
 };
+
+static int sCrFileLineNum = 0;
 
 int crcb_file_get_description(uint32_t fid, cr_FileInfo *file_desc)
 {
@@ -148,21 +149,43 @@ int crcb_read_file(const uint32_t fid,          // which file
                __FUNCTION__, fid, REACH_BYTES_IN_A_FILE_PACKET);
         return cr_ErrorCodes_BUFFER_TOO_SMALL;
     }
-    affirm(REACH_BYTES_IN_A_FILE_PACKET < 256);  // assumed
 
-    uint32_t *ptr = (uint32_t *)pData;
-    if (bytes_requested<4)
-    {
-        for (size_t i = 0; i<bytes_requested; i++)
-            pData[i] = i;
+    switch (fid) {
+    case 0:  // "log_file.csv"
+      {
+        if (offset == 0 ) 
+            sCrFileLineNum = 0;
+
+        unsigned int totalPrinted = 0;
+        unsigned int numPrinted = 0;
+        while (totalPrinted < bytes_requested) {
+            unsigned int limit = bytes_requested - totalPrinted;
+            if (limit < 48)
+            {   // fill with spaces
+                memset(pData, ' ', limit);
+                break;
+            }
+            snprintf(pData, limit, "%4d, line, 0x%04X, %5d, %5d, %5d, %5d,\n",
+                     ++sCrFileLineNum, 0xFFFF & rand(), 0xFFFF & rand(), 
+                     0xFFFF & rand(),  0xFFFF & rand(), 0xFFFF & rand());
+            numPrinted = strnlen(pData, 200);
+            totalPrinted += numPrinted;
+            // i3_log(LOG_MASK_ALWAYS, "%d, %d, %d: '%s'", limit, numPrinted, totalPrinted, pData);
+            pData += numPrinted;
+        }
         *bytes_read = bytes_requested;
+        return 0;
+      }
+    case 1:  // ota.bin
+        // copy some code into the buffer
+        memcpy(pData, (void*)&crcb_file_get_description, bytes_requested);
+        *bytes_read = bytes_requested;
+        return 0;
+    default:
+        affirm(false);  
+        break;
     }
-    else
-    {
-        for (size_t i = 0; i<(bytes_requested >> 2); i++)
-            ptr[i] = offset+i;
-        *bytes_read = bytes_requested & 0xFC;
-    }
+    *bytes_read = bytes_requested;
     return 0;
 }
 
