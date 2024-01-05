@@ -82,6 +82,7 @@ void init_param_repo()
         {
         case cr_ParameterDataType_UINT32: // pid 1, 23
             sCr_param_val[i].value.uint32_value = 1984;
+            // To match the apps and protobufs, must use _value_tags!
             sCr_param_val[i].which_value = cr_ParameterValue_uint32_value_tag;
             if (param_desc[i].has_default_value) 
                 sCr_param_val[i].value.uint32_value = (uint32_t)param_desc[i].default_value;
