@@ -43,20 +43,25 @@
 
 #include "cr_stack.h"
 #include "i3_log.h"
-#include "version.h"
+#include "app_version.h"
+#include "reach_version.h"
+#include "reach_silabs.h"
 
 // Change this to report appropriately about your applicaton.
-void print_versions(void)
+void print_versions(sl_cli_command_arg_t *args)
 {
-    i3_log(LOG_MASK_ALWAYS, TEXT_GREEN "Cygnus Reach Protobuf Server, built %s, %s", __DATE__, __TIME__);
-    i3_log(LOG_MASK_ALWAYS, TEXT_GREEN "Firmware v%u.%u.%u", MAJOR_VERSION, MINOR_VERSION, PATCH_VERSION);
-    i3_log(LOG_MASK_ALWAYS, TEXT_GREEN "SiLabs Thunderboard hardware");
+    (void)args;
+    i3_log(LOG_MASK_ALWAYS, TEXT_GREEN "!!! Cygnus Reach Protobuf Server, built %s, %s", __DATE__, __TIME__);
+    i3_log(LOG_MASK_ALWAYS, TEXT_GREEN "!!!   App version %u.%u.%u", APP_MAJOR_VERSION, APP_MINOR_VERSION, APP_PATCH_VERSION);
+    i3_log(LOG_MASK_ALWAYS, TEXT_GREEN "!!!   Reach stack version %s", REACH_VERSION_STRING);
+    i3_log(LOG_MASK_ALWAYS, TEXT_GREEN "!!!   Reach protobuf version %u", cr_ReachProtoVersion_CURRENT_VERSION);
+    i3_log(LOG_MASK_ALWAYS, TEXT_GREEN "!!! SiLabs Thunderboard hardware");
 
-  #ifdef ENABLE_REMOTE_CLI
+  #ifdef INCLUDE_CLI_SERVICE
     if (i3_log_get_remote_cli_enable())
-        i3_log(LOG_MASK_ALWAYS, TEXT_GREEN "Remote CLI support enabled.");
+        i3_log(LOG_MASK_ALWAYS, TEXT_GREEN "!!! Remote CLI support enabled.");
     else
-        i3_log(LOG_MASK_ALWAYS, TEXT_YELLOW "Remote CLI support built but not enabled.");
+        i3_log(LOG_MASK_ALWAYS, TEXT_YELLOW "!!! Remote CLI support built but not enabled.");
   #else
     i3_log(LOG_MASK_ALWAYS, TEXT_YELLOW "!!! Remote CLI NOT support built in.");
   #endif

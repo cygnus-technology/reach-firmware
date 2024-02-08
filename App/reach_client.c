@@ -123,6 +123,13 @@ bool encode_notification_payload(cr_ReachMessageTypes message_type,    // in
         *encode_size = os_stream.bytes_written;
       }
       break;
+  case cr_ReachMessageTypes_PARAMETER_NOTIFICATION:
+      status = pb_encode(&os_stream, cr_ParameterNotification_fields, data);
+      if (status) {
+          *encode_size = os_stream.bytes_written;
+      }
+
+    break;
   default:
       status = cr_ErrorCodes_NO_DATA;
       break;
@@ -226,5 +233,25 @@ int crcb_notify_error(cr_ErrorReport *err)
 
     return 0;
 }
+
+#if NUM_SUPPORTED_PARAM_NOTIFY >= 0
+// When the device supports a CLI it is expected to share anything printed 
+// to the CLI back to the stack for remote display using crcb_cli_respond()
+int crcb_notify_param(cr_ParameterValue *param)
+{
+    cr_ParameterNotification *note = (cr_ParameterNotification*)sRs_ping;
+    note->values_count = 1;
+    memcpy(&note->values[0], param, sizeof(cr_ParameterValue));
+
+    rs_notification_message(cr_ReachMessageTypes_PARAMETER_NOTIFICATION, 
+                            sRs_ping);
+
+    i3_log(LOG_MASK_PARAMS, TEXT_MAGENTA "Notify PID %d" TEXT_RESET, param->parameter_id);
+    LOG_DUMP_WIRE("notification", sRs_ping, sRs_encoded_response_size);
+    rsl_notify_client(sRs_ping, sRs_encoded_response_size);
+
+    return 0;
+}
+#endif // NUM_SUPPORTED_PARAM_NOTIFY >= 0
 
 

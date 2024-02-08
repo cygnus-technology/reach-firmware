@@ -15,5 +15,8 @@ set PATH_GCCARM=C:\SiliconLabs\SimplicityStudio\v5\developer\toolchains\gnu_arm\
 echo "call create_bl_files.bat to created .gbl files for FW update."
 call ..\create_bl_files.bat
 
+rem force rebuild of dated banner
+rm app\reach_app.o
+
 echo "Created combined hex file and .gbl for OTA FW update."
 

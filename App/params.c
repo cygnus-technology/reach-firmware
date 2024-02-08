@@ -31,11 +31,27 @@
  *                           -----------------------------------
  *                          Copyright i3 Product Development 2023
  *
- * \brief "t1_params.c" provides a trivial 'fake' parameter repository.
+ * \brief "params.c" provides a trivial 'fake' parameter repository.
  *
  * Original Author: Chuck.Peplinski
  *
  ********************************************************************************************/
+
+/**
+ * @file      params.c
+ * @brief     An example of support for the parameter service in a Cygnus 
+ *            Reach enabled device.  This file is part of the application and
+ *            NOT part of the core stack.  Different applications can expose
+ *            different parameter sets using their own implementation of the
+ *            reach callback functions illustrated here. The crcb_ callback
+ *            functions are documented in cr_weak.c.
+ * @copyright (c) Copyright 2023 i3 Product Development. All Rights Reserved.
+ * The Cygngus Reach firmware stack is shared under an MIT license.
+ */
+
+#include "reach-server.h"  // configures Reach
+
+#ifdef INCLUDE_PARAMETER_SERVICE
 
 #include <stdio.h>
 #include <string.h>
@@ -45,7 +61,7 @@
 
 #include "cr_stack.h"
 #include "i3_log.h"
-#include "version.h"
+#include "app_version.h"
 #include "reach_silabs.h"
 
 #include "sl_simple_led_instances.h"
@@ -55,12 +71,23 @@
 // There are 35 params defined in the .c file.
 // One is write only so it is not transmitted.
 // Set this to 34 to go over the 32 param request size.
-#define NUM_PARAMS      35
-#define NUM_EX_PARAMS   4
+#ifndef SKIP_ENUMS
+  #define NUM_PARAMS      35
+  #define NUM_EX_PARAMS   4
+  // Variable data holding the parameter values.
+  // The init function makes it valid.
+  extern const cr_ParamExInfoResponse param_ex_desc[NUM_EX_PARAMS];
+#else
+    #define NUM_PARAMS      33
+#endif
+
+#define STACK_VERSION_PARAM_ID  23
+#define STACK_VERSION_INDEX     11
+#define PROTO_VERSION_PARAM_ID  25
+#define PROTO_VERSION_INDEX     12
 
 // const data describing the parameters, defined below, to be stored in flash.
 extern const cr_ParameterInfo  param_desc[NUM_PARAMS];
-extern const cr_ParamExInfoResponse param_ex_desc[NUM_EX_PARAMS];
 
 // Variable data holding the parameter values.
 // The init function makes it valid.
@@ -173,7 +200,6 @@ void init_param_repo()
             }
             break;
         }
-
     } // end for
 
     // the LED is an example of a parameter that connects to HW.
@@ -182,6 +208,13 @@ void init_param_repo()
     else
         sl_led_turn_off(SL_SIMPLE_LED_INSTANCE(0));
 
+    // copy the stack version into the parameter data.
+    const char *pStackVer = cr_get_reach_version();
+    char *pVariableStackVer = sCr_param_val[STACK_VERSION_INDEX].value.string_value;
+    sprintf(pVariableStackVer, pStackVer, strlen(pStackVer));
+
+    sCr_param_val[PROTO_VERSION_INDEX].which_value = cr_ParameterValue_uint32_value_tag;
+    sCr_param_val[PROTO_VERSION_INDEX].value.uint32_value = cr_ReachProtoVersion_CURRENT_VERSION;
 }
 
 // Populate a parameter value structure
@@ -217,6 +250,7 @@ int crcb_parameter_write(const uint32_t pid, const cr_ParameterValue *data)
 
             switch (data->which_value)
             {
+            // To match the apps and protobufs, must use _value_tags!
             case cr_ParameterValue_uint32_value_tag:
                 sCr_param_val[i].value.uint32_value = data->value.uint32_value;
                 break;
@@ -328,27 +362,33 @@ uint32_t crcb_compute_parameter_hash(void)
     for (size_t i= 1; i<sz; i++)
         hash ^= ptr[i];
 
+  #ifndef SKIP_ENUMS
     ptr = (uint32_t*)param_ex_desc;
     size_t sz1 = sizeof(param_ex_desc)/(sizeof(uint32_t));
 
     for (size_t i= 0; i<sz1; i++)
         hash ^= ptr[i];
 
-    I3_LOG(LOG_MASK_PARAMS, "%s: hash 0x%x over %d+%d = %d words.\n", 
+    I3_LOG(LOG_MASK_PARAMS, "%s: hash 0x%x over %d+%d = %d words.\n",
            __FUNCTION__, hash, sz, sz1, sz+sz1);
+  #else
+    I3_LOG(LOG_MASK_PARAMS, "%s: hash 0x%x over %d words.\n",
+           __FUNCTION__, hash, sz);
+  #endif  // ndef SKIP_ENUMS
+
     return hash;
 }
 
 
 // overriding the weak implemetation, this reports on our local repo.
 // Gets a pointer to this parameter description.
-static int parameter_get_description(const uint32_t pid, cr_ParameterInfo **ppParam)
+static int parameter_get_description(const uint32_t pid, cr_ParameterInfo *pParam)
 {
-    affirm(ppParam != NULL);
+    affirm(pParam != NULL);
 
     for (int i=0; i<NUM_PARAMS; i++) {
         if (param_desc[i].id == pid) {
-            *ppParam = &param_desc[i];
+            memcpy(pParam, &param_desc[i], sizeof(cr_ParameterInfo));
             return 0;
         }
     }
@@ -365,7 +405,7 @@ static int sCurrentParameter = 0;
 // continuous or in order.
 // The caller provides a cr_ParameterInfo containing string pointers that will be overwritten.
 // The app owns the string pointers which must not be on the stack.
-int crcb_parameter_discover_next(cr_ParameterInfo **ppDesc)
+int crcb_parameter_discover_next(cr_ParameterInfo *pDesc)
 {
     if (sCurrentParameter >= NUM_PARAMS)
     {
@@ -373,7 +413,7 @@ int crcb_parameter_discover_next(cr_ParameterInfo **ppDesc)
                __FUNCTION__, sCurrentParameter, NUM_PARAMS);
         return cr_ErrorCodes_INVALID_PARAMETER;
     }
-    int rval = parameter_get_description(param_desc[sCurrentParameter].id, ppDesc);
+    int rval = parameter_get_description(param_desc[sCurrentParameter].id, pDesc);
     sCurrentParameter++;
     return rval;
 }
@@ -402,6 +442,7 @@ int crcb_parameter_discover_reset(const uint32_t pid)
     return cr_ErrorCodes_INVALID_PARAMETER;
 }
 
+#ifndef SKIP_ENUMS
 // In parallel to the parameter discovery, use this to find out 
 // about enumerations and bitfields
 // Stored separately to minimize parameter description size.
@@ -464,16 +505,17 @@ int crcb_parameter_ex_discover_next(cr_ParamExInfoResponse *pDesc)
     I3_LOG(LOG_MASK_PARAMS, "%s: No more ex params 2.", __FUNCTION__);
     return cr_ErrorCodes_INVALID_PARAMETER;
 }
+#endif  // ndef SKIP_ENUMS
 
-// Just for testing, param[11] increments.  This is a demo feature.
+// Just for testing, param[34] increments.  This is a demo feature.
 static uint32_t sLastChanged = 0;
 void generate_data_for_notify(uint32_t timestamp)
 {
     uint32_t delta = timestamp - sLastChanged;
-    if (delta < 1000)
+    if (delta < SYS_TICK_RATE)
         return;   // this parameter changes once per second.
-    sCr_param_val[11].value.sint32_value++;
-    sCr_param_val[11].timestamp = timestamp;
+    sCr_param_val[34].value.sint32_value++;
+    sCr_param_val[34].timestamp = timestamp;
     sLastChanged = timestamp;
 
 }
@@ -713,6 +755,7 @@ const cr_ParameterInfo  param_desc[NUM_PARAMS] = {
         .default_value =    0,
         .storage_location = cr_StorageLocation_NONVOLATILE
     },
+#ifndef SKIP_ENUMS
     // Test enumeration, stored in NVM
     { // [8]
         .id =               17,
@@ -749,6 +792,8 @@ const cr_ParameterInfo  param_desc[NUM_PARAMS] = {
         .default_value =    5,
         .storage_location = cr_StorageLocation_NONVOLATILE
     },
+#endif  // ndef SKIP_ENUMS
+
     // Test byte array                      
     { // [10]               
         .id =               21,
@@ -767,37 +812,36 @@ const cr_ParameterInfo  param_desc[NUM_PARAMS] = {
         .default_value =    0,
         .storage_location = cr_StorageLocation_NONVOLATILE
     },
-    // Read only with no default value.
-    { // [11]
-        .id =               23,
-        .data_type =        cr_ParameterDataType_INT32,
-        .size_in_bytes  =   0,
-        .name =             "read only",
+    // Show the stack version [11] = [STACK_VERSION_INDEX]
+    {
+        .id =               STACK_VERSION_PARAM_ID,
+        .data_type =        cr_ParameterDataType_STRING,
+        .size_in_bytes  =   REACH_PVAL_STRING_LEN,
+        .name =             "C stack version",
         .access =           cr_AccessLevel_READ,
-        .description =      "Read only,RAM-EX",
-        .units =            "+/- 1024",
+        .description =      "Updated in code",
+        .units =            "version",
         .has_description =  true,
-        .has_range_min =    true,
-        .has_range_max =    true,
+        .has_range_min =    false,
+        .has_range_max =    false,
         .has_default_value = false,
         .range_min =        -1024,
-        .range_max =        1023,
+        .range_max =        999999,
         .default_value =    1,
-        .storage_location = cr_StorageLocation_RAM_EXTENDED
+        .storage_location = cr_StorageLocation_RAM
     },
-    // write only
-    { // [12]
-        .id =               25,
-        .data_type =        cr_ParameterDataType_FLOAT32,
-        .size_in_bytes  =   0,
-        .name =             "write only",
-        .access =           cr_AccessLevel_WRITE,
-        .description =      "write only",
-        .units =            "percentage",
+    { // Show the proto version [12] = [PROTO_VERSION_INDEX]
+        .id =               PROTO_VERSION_PARAM_ID,
+        .data_type =        cr_ParameterDataType_UINT32,
+        .size_in_bytes  =   4,
+        .name =             "proto file version",
+        .access =           cr_AccessLevel_READ,
+        .description =      "version of .proto file",
+        .units =            "version",
         .has_description =  true,
-        .has_range_min =    true,
-        .has_range_max =    true,
-        .has_default_value = true,
+        .has_range_min =    false,
+        .has_range_max =    false,
+        .has_default_value = false,
         .range_min =        0,
         .range_max =        100,
         .default_value =    66.66666666666667,
@@ -808,8 +852,8 @@ const cr_ParameterInfo  param_desc[NUM_PARAMS] = {
         .id =               27,
         .data_type =        cr_ParameterDataType_UINT64,
         .size_in_bytes  =   0,
-        .name =             "uint64 NVM",
-        .access =           cr_AccessLevel_READ_WRITE,
+        .name =             "write only",
+        .access =           cr_AccessLevel_WRITE,
         .description =      "This parameter is 13th",
         .units =            "37 bits",
         .has_description =  true,
@@ -867,7 +911,7 @@ const cr_ParameterInfo  param_desc[NUM_PARAMS] = {
         .has_description =  true,
         .has_range_min =    false,
         .has_range_max =    true,
-        .has_default_value = false,
+        .has_default_value = true,
         .range_min =        -1024,
         .range_max =        1023,
         .default_value =    1,
@@ -1172,21 +1216,21 @@ const cr_ParameterInfo  param_desc[NUM_PARAMS] = {
         .data_type =        cr_ParameterDataType_INT32,
         .size_in_bytes  =   0,
         .name =             "p69",
-        .access =           cr_AccessLevel_READ,
-        .description =      "Read only,RAM",
-        .units =            "signed int",
+        .access =           cr_AccessLevel_READ_WRITE,
+        .description =      "incrementing",
+        .units =            "unsigned int",
         .has_description =  true,
-        .has_range_min =    true,
-        .has_range_max =    true,
+        .has_range_min =    false,
+        .has_range_max =    false,
         .has_default_value = true,
-        .range_min =        -1024,
+        .range_min =        0,
         .range_max =        1023,
-        .default_value =    69,
+        .default_value =    1,
         .storage_location = cr_StorageLocation_RAM
     },
 };
 
-
+#ifndef SKIP_ENUMS
 const cr_ParamExInfoResponse param_ex_desc[NUM_EX_PARAMS] = {
     {
         17, // associated_pid
@@ -1247,7 +1291,9 @@ const cr_ParamExInfoResponse param_ex_desc[NUM_EX_PARAMS] = {
         }
     }
 };
+#endif  // ndef SKIP_ENUMS
 
 
+#endif // def INCLUDE_PARAMETER_SERVICE
 
 

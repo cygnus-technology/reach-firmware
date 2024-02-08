@@ -38,6 +38,14 @@
  *
  ********************************************************************************************/
 
+/**
+ * @file      reach_silabs.h
+ * @brief     Integration of SiLabs BLE features for Cygnus Reach demo
+ * 
+ * @copyright (c) Copyright 2023 i3 Product Development. All Rights Reserved.
+ */
+
+
 #ifndef _REACH_H_
 #define _REACH_H_
 
@@ -46,6 +54,7 @@
 #include "gatt_db.h"
 #include "sl_bluetooth.h"
 #include "sl_cli_command.h"
+#include "reach-server.h"
 
 #define REACH_MAX_PROMPT_SIZE 256
 #define REACH_SN_KEY    0x10000
@@ -82,6 +91,27 @@ void rsl_app_process_action(void);
  *****************************************************************************/
 void rsl_bt_on_event(sl_bt_msg_t *evt);
 
+
+/**
+ * The Reach handler for each SiLabs sl_bt_evt is made into a function. This 
+ * should simplify integration with new SiLabs projects.  Returns 0 if the Reach 
+ * thing is handled.  Non-zero return implies there should be another handler. 
+ * 
+ */
+void rsl_on_evt_system_boot_id();
+void rsl_on_evt_connection_opened_id(sl_bt_msg_t *evt);
+void rsl_on_evt_connection_closed_id();
+int  rsl_on_evt_gatt_server_user_read_request_id(
+    sl_bt_evt_gatt_server_user_read_request_t *data);
+int rsl_on_evt_gatt_server_characteristic_status_id(
+    sl_bt_evt_gatt_server_characteristic_status_t *data);
+// int rsl_on_evt_gatt_server_user_write_request_id(
+//    sl_bt_evt_gatt_server_user_write_request_t *data);
+void rsl_on_evt_connection_parameters_id(sl_bt_evt_connection_parameters_t *data);
+void rsl_on_evt_connection_phy_status_id(sl_bt_evt_connection_phy_status_t *data);
+int rsl_on_evt_gatt_server_attribute_value_id(sl_bt_evt_gatt_server_attribute_value_t *data);
+
+
 const char *rsl_get_advertised_name();
 
 int rsl_read_serial_number(unsigned int *sn);
@@ -90,10 +120,12 @@ int rsl_write_serial_number(unsigned int sn);
 /**************************************************************************//**
  * Command line handlers:
  *****************************************************************************/
-extern void print_versions(void);
-extern void slash();
+extern void print_versions(sl_cli_command_arg_t *args);
+extern void slash(sl_cli_command_arg_t *args);
 extern void cli_lm(sl_cli_command_arg_t *args);
-extern void cli_rcli(sl_cli_command_arg_t *args);
+#ifdef INCLUDE_CLI_SERVICE
+  extern void cli_rcli(sl_cli_command_arg_t *args);
+#endif  // def INCLUDE_CLI_SERVICE
 extern void cli_phy(sl_cli_command_arg_t *args);
 extern void cli_nvm(sl_cli_command_arg_t *args);
 extern void cli_sn(sl_cli_command_arg_t *args);

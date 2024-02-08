@@ -35,16 +35,30 @@
  *
  ********************************************************************************************/
 
+/**
+ * @file      commands.c
+ * @brief     An example of support for the command service in a Cygnus Reach 
+ *            enabled device.  This file is part of the application and NOT part
+ *            of the core stack.  Different applications can expose different
+ *            command sets using their own implementation of the reach callback
+ *            functions illustrated here. The crcb_ callback functions are
+ *            documented in cr_weak.c.
+ * @copyright (c) Copyright 2023 i3 Product Development. All Rights Reserved.
+ * The Cygngus Reach firmware stack is shared under an MIT license.
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
 
+#include "reach-server.h"  // configures Reach
 #include "cr_stack.h"
 #include "i3_log.h"
 #include "reach_silabs.h"
 
 #include "nvm3_default.h"
 
+#ifdef INCLUDE_COMMAND_SERVICE
 //*************************************************************************
 //  Command Service
 //*************************************************************************
@@ -60,8 +74,10 @@
 uint8_t sCommandIndex = 0;
 const cr_CommandInfo sCommands[NUM_COMMANDS] = 
 {
+  #ifdef INCLUDE_CLI_SERVICE
     {COMMAND_ENABLE_RCLI,   "Enable remote CLI"},
     {COMMAND_DISABLE_RCLI,  "Disable remote CLI"},
+  #endif  // def INCLUDE_CLI_SERVICE
     {COMMAND_MIN_LOG,       "Minimize Logging (lm 0)"},
     {COMMAND_MAX_LOG,       "Much Logging (lm 7C0)"},
     {COMMAND_FACTORY,       "Factory Reset"}     // erases NVM, restores serial number
@@ -71,7 +87,7 @@ const cr_CommandInfo sCommands[NUM_COMMANDS] =
 
 };
 
-int crcb_file_get_command_count()
+int crcb_get_command_count()
 {
     return NUM_COMMANDS;
 }
@@ -110,12 +126,14 @@ int crcb_command_execute(const uint8_t cid)
             i3_log(LOG_MASK_ALWAYS, "Execute command %d, '%s'", 
                    sCommands[i].id, sCommands[i].name);
             switch (cid) {
+          #ifdef INCLUDE_CLI_SERVICE
             case COMMAND_ENABLE_RCLI:  // 1
                 i3_log_set_remote_cli_enable(true);
                 break;
             case COMMAND_DISABLE_RCLI:  // 2
                 i3_log_set_remote_cli_enable(false);
                 break;
+          #endif  // def INCLUDE_CLI_SERVICE
             case COMMAND_MIN_LOG:  // 3
                 i3_log_set_mask(0);
                 break;
@@ -150,3 +168,4 @@ int crcb_command_execute(const uint8_t cid)
     return cr_ErrorCodes_INVALID_PARAMETER;
 }
 
+#endif  // def INCLUDE_COMNMAND_SERVICE
