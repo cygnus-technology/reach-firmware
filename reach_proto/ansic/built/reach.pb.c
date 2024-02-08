@@ -54,10 +54,10 @@ PB_BIND(cr_ParameterWrite, cr_ParameterWrite, AUTO)
 PB_BIND(cr_ParameterWriteResult, cr_ParameterWriteResult, AUTO)
 
 
-PB_BIND(cr_ParameterNotify, cr_ParameterNotify, AUTO)
+PB_BIND(cr_ParameterNotifyConfig, cr_ParameterNotifyConfig, AUTO)
 
 
-PB_BIND(cr_ParameterNotifyResult, cr_ParameterNotifyResult, AUTO)
+PB_BIND(cr_ParameterNotifyConfigResponse, cr_ParameterNotifyConfigResponse, AUTO)
 
 
 PB_BIND(cr_ParameterNotification, cr_ParameterNotification, AUTO)
@@ -69,7 +69,7 @@ PB_BIND(cr_ParameterValue, cr_ParameterValue, AUTO)
 PB_BIND(cr_DiscoverFiles, cr_DiscoverFiles, AUTO)
 
 
-PB_BIND(cr_DiscoverFilesReply, cr_DiscoverFilesReply, AUTO)
+PB_BIND(cr_DiscoverFilesResponse, cr_DiscoverFilesResponse, AUTO)
 
 
 PB_BIND(cr_FileInfo, cr_FileInfo, AUTO)
@@ -78,13 +78,19 @@ PB_BIND(cr_FileInfo, cr_FileInfo, AUTO)
 PB_BIND(cr_FileTransferInit, cr_FileTransferInit, AUTO)
 
 
-PB_BIND(cr_FileTransferInitReply, cr_FileTransferInitReply, AUTO)
+PB_BIND(cr_FileTransferInitResponse, cr_FileTransferInitResponse, AUTO)
 
 
 PB_BIND(cr_FileTransferData, cr_FileTransferData, AUTO)
 
 
 PB_BIND(cr_FileTransferDataNotification, cr_FileTransferDataNotification, AUTO)
+
+
+PB_BIND(cr_FileEraseRequest, cr_FileEraseRequest, AUTO)
+
+
+PB_BIND(cr_FileEraseResponse, cr_FileEraseResponse, AUTO)
 
 
 PB_BIND(cr_DiscoverStreams, cr_DiscoverStreams, AUTO)
@@ -99,7 +105,7 @@ PB_BIND(cr_StreamInfo, cr_StreamInfo, AUTO)
 PB_BIND(cr_StreamOpen, cr_StreamOpen, AUTO)
 
 
-PB_BIND(cr_StreamOpenReply, cr_StreamOpenReply, AUTO)
+PB_BIND(cr_StreamOpenResponse, cr_StreamOpenResponse, AUTO)
 
 
 PB_BIND(cr_StreamClose, cr_StreamClose, AUTO)
@@ -111,7 +117,7 @@ PB_BIND(cr_StreamData, cr_StreamData, AUTO)
 PB_BIND(cr_DiscoverCommands, cr_DiscoverCommands, AUTO)
 
 
-PB_BIND(cr_DiscoverCommandsResult, cr_DiscoverCommandsResult, AUTO)
+PB_BIND(cr_DiscoverCommandsResponse, cr_DiscoverCommandsResponse, AUTO)
 
 
 PB_BIND(cr_CommandInfo, cr_CommandInfo, AUTO)
@@ -120,10 +126,22 @@ PB_BIND(cr_CommandInfo, cr_CommandInfo, AUTO)
 PB_BIND(cr_SendCommand, cr_SendCommand, AUTO)
 
 
-PB_BIND(cr_SendCommandResult, cr_SendCommandResult, AUTO)
+PB_BIND(cr_SendCommandResponse, cr_SendCommandResponse, AUTO)
 
 
 PB_BIND(cr_CLIData, cr_CLIData, AUTO)
+
+
+PB_BIND(cr_TimeSetRequest, cr_TimeSetRequest, AUTO)
+
+
+PB_BIND(cr_TimeSetResponse, cr_TimeSetResponse, AUTO)
+
+
+PB_BIND(cr_TimeGetRequest, cr_TimeGetRequest, AUTO)
+
+
+PB_BIND(cr_TimeGetResponse, cr_TimeGetResponse, AUTO)
 
 
 PB_BIND(cr_BufferSizes, cr_BufferSizes, AUTO)
