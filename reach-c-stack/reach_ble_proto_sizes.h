@@ -2,19 +2,20 @@
 //          i3pd.com, a Helios company.
 // 
 // reach_ble_proto_sizes.h
-// 
-// Structure sizes defining reach.options for BLE usage
-// These sizes are based on the 240 byte BLE packet
-// and are tuned to fit in all cases.
-// Hence there is no need for a separate packetizing layer.
-//
-// These values are used to populate reach.options for nanopb.
-// cr_stack.h uses these to define more specific buffer sizes.
-// 
-// If you have a reason to change these, consider the effect in:
-//   cr_stack.h, where you could use a different common size.
-//   reach.options.prototype
-//   the DeviceInfoResponse message in reach.proto
+
+/**
+ * @file      reach_ble_proto_sizes.h
+ * @brief     This file contains structure sizes defining reach.options for BLE 
+ *            usage These sizes are based on the 240 byte BLE packetand are
+ *            tuned to fit in all cases. Hence there is no need for a separate
+ *            packetizing layer. These values are used to populate reach.options
+ *            for nanopb. cr_stack.h uses these to define more specific buffer
+ *            sizes. If you have a reason to change these, consider the effect
+ *            in cr_stack.h, where you could use a different common size and
+ *            reach.options.prototype and the DeviceInfoResponse message in
+ *            reach.proto.
+ * @copyright (c) Copyright 2023 i3 Product Development. All Rights Reserved.
+ */
 
 #ifndef _REACH_BLE_PROTO_SIZES_H
 #define _REACH_BLE_PROTO_SIZES_H
@@ -61,34 +62,16 @@
 #define REACH_COMMAND_NAME_LEN                  REACH_MEDIUM_STRING_LEN 
 #define REACH_PARAM_INFO_UNITS_LEN              REACH_SHORT_STRING_LEN 
 #define REACH_FW_VERSION_LEN                    REACH_SHORT_STRING_LEN
-#define REACH_UUID_BYTE_LEN                     REACH_SHORT_STRING_LEN
+#define REACH_UUID_BYTE_LEN                     16 // this is constant.
 #define REACH_PI_ENUM_NAME_LEN                  REACH_SHORT_STRING_LEN
 #define REACH_COUNT_PARAM_READ_VALUES           REACH_NUM_MEDIUM_STRUCTS_IN_MESSAGE
 #define REACH_DISCOVER_STREAM_COUNT             REACH_NUM_MEDIUM_STRUCTS_IN_MESSAGE
 #define REACH_COUNT_PARAM_WRITE_IN_REQUEST      REACH_NUM_MEDIUM_STRUCTS_IN_MESSAGE
 #define REACH_COUNT_PARAM_NOTIF_VALUES          REACH_NUM_MEDIUM_STRUCTS_IN_MESSAGE
 #define REACH_DISCOVER_FILES_COUNT              REACH_NUM_MEDIUM_STRUCTS_IN_MESSAGE
+#define REACH_NUM_PARAM_BYTES                   32
     
-// Used to keep the size of the device info struct down.
-// see enum SizesOffsets in reach.proto
-typedef struct
-{
-    uint16_t  max_message_size;
-    uint16_t  big_data_buffer_size;
-    uint8_t   parameter_buffer_count;
-    uint8_t   num_medium_structs_in_msg;
-    uint8_t   device_info_len;
-    uint8_t   long_string_len;
-    uint8_t   count_param_ids;
-    uint8_t   medium_string_len;
-    uint8_t   short_string_len;
-    uint8_t   param_info_enum_count;
-    uint8_t   services_count;
-    uint8_t   pi_enum_count;
-    uint8_t   num_commands_in_response;
-    uint8_t   count_param_desc_in_response;
-} reach_sizes_t;
-
-#define REACH_SIZE_STRUCT_SIZE      16
+// REACH_SIZE_STRUCT_SIZE must match the size of the reach_sizes_t defined in cr_stack.h
+#define REACH_SIZE_STRUCT_SIZE      16    
 
 #endif  // ndef _REACH_BLE_PROTO_SIZES_H

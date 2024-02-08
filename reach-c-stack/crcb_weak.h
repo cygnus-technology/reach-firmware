@@ -31,7 +31,7 @@
  *                           -----------------------------------
  *                          Copyright i3 Product Development 2023
  *
- * \brief "cr_weak.c" contains the weak implementations of functions the user of
+ * \brief "cr_weak.h" defines the weak implementations of the callback functions the user of
  * the Cygnus Reach device stack should override.
  *
  * Original Author: Chuck.Peplinski
@@ -39,7 +39,7 @@
  ********************************************************************************************/
 
 /**
- * @file      cr_weak.c
+ * @file      cr_weak.h
  * @brief     The Reach stack relies on these callback functions being 
  *            implemented by the device. The gcc supported "weak" keyword allows
  *            us to build without having real implementations..
@@ -69,14 +69,7 @@
 * @param   len    Pointer to the number of bytes in the supplied prompt (output)
 * @return  cr_ErrorCodes_NO_ERROR on success.  cr_ErrorCodes_NO_DATA if no data is available.
 */
-int __attribute__((weak)) crcb_get_coded_prompt(uint8_t *prompt, size_t *len)
-{
-    (void)prompt;
-    affirm(*len <= CR_CODED_BUFFER_SIZE);
-    if (*len != 0)
-        return cr_ErrorCodes_NO_ERROR;
-    return cr_ErrorCodes_NO_DATA;
-}
+int crcb_get_coded_prompt(uint8_t *prompt, size_t *len);
 
 /**
 * @brief   crcb_send_coded_response
@@ -87,32 +80,7 @@ int __attribute__((weak)) crcb_get_coded_prompt(uint8_t *prompt, size_t *len)
 * @return  cr_ErrorCodes_NO_ERROR on success or a non-zero error preferably from the 
 *          cr_ErrorCodes_ enumeration
 */
-int __attribute__((weak)) crcb_send_coded_response(const uint8_t *response, size_t len)
-{
-  #if 1
-    (void)response;
-    (void)len;
-    printf("%s: weak default.\n", __FUNCTION__);
-    return 0;
-  #else
-    (void)response;
-    (void)len;
-    printf("%s: weak default, %d bytes.\n", __FUNCTION__, (int)len);
-
-    for (size_t i = 0; i < len; i++)
-    {
-      printf("0x%02X, ", (unsigned char)response[i]);
-
-      if ((i > 0) && (((i + 1) % 12) == 0))
-      {
-        printf("\n");
-      }
-    }
-    printf("\n\n");
-
-    return cr_ErrorCodes_NO_DATA;
-  #endif
-}
+int crcb_send_coded_response(const uint8_t *response, size_t len);
 
 /**
 * @brief   crcb_notify_error
@@ -123,13 +91,7 @@ int __attribute__((weak)) crcb_send_coded_response(const uint8_t *response, size
 * @return  cr_ErrorCodes_NO_ERROR on success or a non-zero error preferably from
 *          the cr_ErrorCodes_ enumeration
 */
-int __attribute__((weak)) crcb_notify_error(cr_ErrorReport *err)
-{
-    (void)err;
-    I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-    return cr_ErrorCodes_NOT_IMPLEMENTED;
-}
-
+int crcb_notify_error(cr_ErrorReport *err);
 
 
 ///*************************************************************************
@@ -147,12 +109,7 @@ int __attribute__((weak)) crcb_notify_error(cr_ErrorReport *err)
 * @return  cr_ErrorCodes_NO_ERROR on success or a non-zero error preferably from
 *          the cr_ErrorCodes_ enumeration
 */
-int __attribute__((weak)) crcb_device_get_info(cr_DeviceInfoResponse *pDi)
-{
-    (void)pDi;
-    I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-    return cr_ErrorCodes_NOT_IMPLEMENTED;
-}
+int crcb_device_get_info(cr_DeviceInfoResponse *pDi);
 
 
 ///*************************************************************************
@@ -169,12 +126,8 @@ int __attribute__((weak)) crcb_device_get_info(cr_DeviceInfoResponse *pDi)
 * @return  cr_ErrorCodes_NO_ERROR on success or a non-zero error preferably 
 *         from the cr_ErrorCodes_ enumeration
 */
-int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
-{
-    (void)rssi;
-    I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-    return cr_ErrorCodes_NOT_IMPLEMENTED;
-}
+int crcb_ping_get_signal_strength(int8_t *rssi);
+
 
 #ifdef INCLUDE_CLI_SERVICE
     /**
@@ -187,12 +140,7 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     * @return  cr_ErrorCodes_NO_ERROR on success or a non-zero error preferably from the 
     *          cr_ErrorCodes_ enumeration
     */
-    int __attribute__((weak)) crcb_cli_enter(const char *cli)
-    {
-        (void)cli;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
+    int crcb_cli_enter(const char *cli);
 
     /**
     * @brief   crcb_cli_respond
@@ -206,12 +154,7 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     * @return  cr_ErrorCodes_NO_ERROR on success or a non-zero error preferably from the 
     *          cr_ErrorCodes_ enumeration.
     */
-    int __attribute__((weak)) crcb_cli_respond(char *cli)
-    {
-        (void)cli;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
+    int crcb_cli_respond(char *cli);
 
     /**
     * @brief   crcb_set_command_line
@@ -222,11 +165,7 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     * @param   ins A string pointer to be retrieved by crcb_get_command_line 
     * @return  none
     */
-    const char *sSaveIns = NULL;
-    void __attribute__((weak)) crcb_set_command_line(const char *ins)
-    {
-        sSaveIns = ins;
-    }
+    void crcb_set_command_line(const char *ins);
 
     /**
     * @brief   crcb_get_command_line
@@ -236,10 +175,8 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     *          source.
     * @return  A string pointer stored by crcb_set_command_line().
     */
-    const char *__attribute__((weak)) crcb_get_command_line()
-    {
-        return sSaveIns;
-    }
+    const char *crcb_get_command_line();
+
 #endif  /// def INCLUDE_CLI_SERVICE
 
 #ifdef INCLUDE_PARAMETER_SERVICE
@@ -249,11 +186,7 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     * @details returns the number of parameters exposed by this device.
     * @return  Total number of parameter descriptions
     */
-    int __attribute__((weak)) crcb_parameter_get_count()
-    {
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return 0;
-    }
+    int crcb_parameter_get_count();
 
     /**
     * @brief   crcb_parameter_discover_reset
@@ -265,13 +198,7 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     * @return  cr_ErrorCodes_NO_ERROR on success or a non-zero error like 
     *          cr_ErrorCodes_INVALID_PARAMETER.
     */
-    int __attribute__((weak)) crcb_parameter_discover_reset(const uint32_t pid)
-    {
-        (void)pid;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
-
+    int crcb_parameter_discover_reset(const uint32_t pid);
 
     /**
     * @brief   crcb_parameter_discover_next
@@ -287,24 +214,14 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     * @return  cr_ErrorCodes_NO_ERROR on success or cr_ErrorCodes_INVALID_PARAMETER 
     *          if the last parameter has already been returned.
     */
-    int __attribute__((weak)) crcb_parameter_discover_next(cr_ParameterInfo *pDesc)
-    {
-        (void)pDesc;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
+    int crcb_parameter_discover_next(cr_ParameterInfo *pDesc);
 
     /**
     * @brief   crcb_parameter_ex_get_count
     * @details returns the number of parameter extension exposed by this device.
     * @return  Total number of parameter extensions
     */
-    int __attribute__((weak)) crcb_parameter_ex_get_count(const int32_t pid)
-    {
-        (void)pid;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return 0;
-    }
+    int crcb_parameter_ex_get_count(const int32_t pid);
 
     /**
     * @brief   crcb_parameter_ex_discover_reset
@@ -317,12 +234,7 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     * @return  cr_ErrorCodes_NO_ERROR on success or a non-zero error like 
     *          cr_ErrorCodes_INVALID_PARAMETER.
     */
-    int __attribute__((weak)) crcb_parameter_ex_discover_reset(const int32_t pid)
-    {
-        (void)pid;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
+    int crcb_parameter_ex_discover_reset(const int32_t pid);
 
     /**
     * @brief   crcb_parameter_ex_discover_next
@@ -336,13 +248,7 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     * @return  cr_ErrorCodes_NO_ERROR on success or cr_ErrorCodes_INVALID_PARAMETER 
     *          if the last parameter extension has already been returned.
     */
-    int __attribute__((weak)) crcb_parameter_ex_discover_next(cr_ParamExInfoResponse *pDesc)
-    {
-        (void)pDesc;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
-
+    int crcb_parameter_ex_discover_next(cr_ParamExInfoResponse *pDesc);
 
     /**
     * @brief   crcb_parameter_read
@@ -358,13 +264,7 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     *          Also can return cr_ErrorCodes_READ_FAILED or
     *          cr_ErrorCodes_PERMISSION_DENIED
     */
-    int __attribute__((weak)) crcb_parameter_read(const uint32_t pid, cr_ParameterValue *data)
-    {
-        (void)pid;
-        (void)data;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
+    int crcb_parameter_read(const uint32_t pid, cr_ParameterValue *data);
 
     /**
     * @brief   crcb_parameter_write
@@ -380,13 +280,7 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     *          Also can return cr_ErrorCodes_WRITE_FAILED or
     *          cr_ErrorCodes_PERMISSION_DENIED
     */
-    int __attribute__((weak)) crcb_parameter_write(const uint32_t pid, const cr_ParameterValue *data)
-    {
-        (void)pid;
-        (void)data;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
+    int crcb_parameter_write(const uint32_t pid, const cr_ParameterValue *data);
 
     /**
     * @brief   crcb_compute_parameter_hash
@@ -397,11 +291,7 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     * @return  cr_ErrorCodes_NO_ERROR on success or an error from the cr_ErrorCodes_
     *          enumeration.
     */
-    uint32_t __attribute__((weak)) crcb_compute_parameter_hash(void)
-    {
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return 0;
-    }
+    uint32_t crcb_compute_parameter_hash(void);
 
   #if NUM_SUPPORTED_PARAM_NOTIFY >= 0
     /**
@@ -415,13 +305,10 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     * @return  cr_ErrorCodes_NO_ERROR on success or an error from the cr_ErrorCodes_
     *          enumeration if the notification fails.
     */
-    int __attribute__((weak)) crcb_notify_param(cr_ParameterValue *param)
-    {
-        (void)param;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return 0;
-    }
+    int crcb_notify_param(cr_ParameterValue *param);
+
   #endif /// NUM_SUPPORTED_PARAM_NOTIFY >= 0
+
 #endif /// INCLUDE_PARAMETER_SERVICE
 
 #ifdef INCLUDE_COMMAND_SERVICE
@@ -432,11 +319,7 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     *          implemented by the device.
     * @return  the number of commands implemented by the device.
     */    
-    int __attribute__((weak)) crcb_get_command_count()
-    {
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return 0;
-    }
+    int crcb_get_command_count();
 
     /**
     * @brief   crcb_command_discover_reset
@@ -448,12 +331,7 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     * @return  cr_ErrorCodes_NO_ERROR on success or a non-zero error like 
     *          cr_ErrorCodes_INVALID_PARAMETER.
     */
-    int __attribute__((weak)) crcb_command_discover_reset(const uint32_t cid)
-    {
-        (void)cid;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
+    int crcb_command_discover_reset(const uint32_t cid);
 
     /**
     * @brief   crcb_command_discover_next
@@ -465,12 +343,7 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     * @return  cr_ErrorCodes_NO_ERROR on success or cr_ErrorCodes_INVALID_PARAMETER 
     *          if the last command has already been returned.
     */
-    int __attribute__((weak)) crcb_command_discover_next(cr_CommandInfo *cmd_desc)
-    {
-        (void)cmd_desc;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
+    int crcb_command_discover_next(cr_CommandInfo *cmd_desc);
 
     /**
     * @brief   crcb_command_execute
@@ -479,12 +352,8 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     * @return  cr_ErrorCodes_NO_ERROR on success or an error from the cr_ErrorCodes_
     *          enumeration if the command fails.
     */
-    int __attribute__((weak)) crcb_command_execute(const uint8_t cid)
-    {
-        (void)cid;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
+    int crcb_command_execute(const uint8_t cid);
+
 #endif  /// def INCLUDE_COMMAND_SERVICE
 
 #ifdef INCLUDE_FILE_SERVICE
@@ -495,11 +364,7 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     *          implemented by the device.
     * @return  the number of files implemented by the device.
     */    
-    int __attribute__((weak)) crcb_file_get_file_count()
-    {
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return 0;
-    }
+    int crcb_file_get_file_count();
 
     /**
     * @brief   crcb_file_discover_reset
@@ -511,12 +376,7 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     * @return  cr_ErrorCodes_NO_ERROR on success or a non-zero error like 
     *          cr_ErrorCodes_INVALID_PARAMETER.
     */
-    int __attribute__((weak)) crcb_file_discover_reset(const uint8_t fid)
-    {
-        (void)fid;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
+    int crcb_file_discover_reset(const uint8_t fid);
 
     /**
     * @brief   crcb_file_discover_next
@@ -528,12 +388,7 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     * @return  cr_ErrorCodes_NO_ERROR on success or cr_ErrorCodes_INVALID_PARAMETER 
     *          if the last file has already been returned.
     */
-    int __attribute__((weak)) crcb_file_discover_next(cr_FileInfo *file_desc)
-    {
-        (void)file_desc;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
+    int crcb_file_discover_next(cr_FileInfo *file_desc);
 
     /**
     * @brief   crcb_file_get_description
@@ -544,14 +399,7 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     * @return  cr_ErrorCodes_NO_ERROR on success or a non-zero error like 
     *          cr_ErrorCodes_INVALID_PARAMETER.
     */
-    int __attribute__((weak)) crcb_file_get_description(uint32_t fid, 
-                                                      cr_FileInfo *file_desc)
-    {
-        (void)fid;
-        (void)file_desc;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
+    int crcb_file_get_description(uint32_t fid, cr_FileInfo *file_desc);
 
     /**
     * @brief   crcb_file_get_preferred_ack_rate
@@ -562,12 +410,7 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     * @return  A return value of zero means that there is no preferred rate and the 
     *          client can specify it.
     */
-    int __attribute__((weak)) crcb_file_get_preferred_ack_rate(bool is_write)
-    {
-        (void)is_write;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return 0;
-    }
+    int crcb_file_get_preferred_ack_rate(bool is_write);
 
     /**
     * @brief   crcb_read_file
@@ -580,22 +423,12 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     * @param   pBytes_read (output) bytes actually read, negative for errors.
     * @return  returns zero or an error code
     */
-    int __attribute__((weak)) 
+    int 
     crcb_read_file(const uint32_t fid,            // which file
                    const int offset,              // offset, negative value specifies current location.
                    const size_t bytes_requested,  // how many bytes to read
                    uint8_t *pData,                // where the data goes
-                   int *pBytes_read)              // bytes actually read, negative for errors.
-    {
-        (void)fid;
-        (void)offset;
-        (void)bytes_requested;
-        (void)pData,
-        (void)pBytes_read;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
-
+                   int *pBytes_read);             // bytes actually read, negative for errors.
 
     /**
     * @brief   crcb_write_file
@@ -607,19 +440,11 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     * @param   pData data from the stack. 
     * @return  returns zero or an error code
     */
-    int __attribute__((weak)) 
+    int 
     crcb_write_file(const uint32_t fid,    // which file
                     const int offset,      // offset, negative value specifies current location.
                     const size_t bytes,    // how many bytes to write
-                    const uint8_t *pData)  // where to get the data from
-    {
-        (void)fid;
-        (void)offset;
-        (void)bytes;
-        (void)pData;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
+                    const uint8_t *pData); // where to get the data from
 
     /**
     * @brief   crcb_erase_file
@@ -629,26 +454,16 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     * @param   offset (input) offset, negative value specifies current location.
     * @return  returns zero or an error code
     */
-    int __attribute__((weak)) crcb_erase_file(const uint32_t fid)
-    {
-        (void)fid;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
+    int crcb_erase_file(const uint32_t fid);
 
     /**
     * @brief   crcb_file_transfer_complete
-    * @details Called when the last bytes have been received and a file write 
-    *          (upload) is complete.
+    * @details Called when the last bytes have been received and a file write is 
+    *          complete.
     * @param   fid (input) which file
     * @return  returns zero or an error code
     */
-    int __attribute__((weak)) crcb_file_transfer_complete(const uint32_t fid)
-    {
-        (void)fid;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
+    int crcb_file_transfer_complete(const uint32_t fid);
 
     /**
     * @brief   crcb_file_prepare_to_write
@@ -660,16 +475,9 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     * @param   bytes_to_write 
     * @return  returns zero or an error code.  The stack reacts to an error code.
     */
-    int __attribute__((weak)) crcb_file_prepare_to_write(const uint32_t fid,
-                                                         const size_t offset,
-                                                         const size_t bytes_to_write)
-    {
-        (void)fid;
-        (void)offset;
-        (void)bytes_to_write;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NO_ERROR;
-    }
+    int crcb_file_prepare_to_write(const uint32_t fid,
+                                   const size_t offset,
+                                   const size_t bytes_to_write);
 
 #endif /// def INCLUDE_FILE_SERVICE
 
@@ -682,12 +490,7 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     * @param   response (output) with utc_seconds current time and zone 
     * @return  returns zero or an error code
     */
-    int __attribute__((weak)) crcb_time_get(cr_TimeGetResponse *response)
-    {
-        (void)response;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
+    int crcb_time_get(cr_TimeGetResponse *response);
 
     /**
     * @brief   crcb_time_set
@@ -695,65 +498,45 @@ int __attribute__((weak)) crcb_ping_get_signal_strength(int8_t *rssi)
     *          time clock.
     * @note    Time is specified in UTC Epoch format, seconds since 1970. More than 
     *          32 bits are required to remain valid past 2030.
-    * @param   request : structure with seconds and timeszone
+    * @param   request (input) structure with utc_seconds current time and zone
     * @return  returns zero or an error code
     */
-    int __attribute__((weak)) crcb_time_set(const cr_TimeSetRequest *request)
-    {
-        (void)request;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
+    int crcb_time_set(const cr_TimeSetRequest *request);
+
 #endif  /// def INCLUDE_TIME_SERVICE
 
 #ifdef INCLUDE_OTA_SERVICE
     ///*************************************************************************
     ///  OTA service not yet supported
     ///*************************************************************************
-    int __attribute__((weak)) crcb_OTA_discover_next(cr_OTA_s *OTA_desc)
-    {
-        (void)OTA_desc;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
+    int crcb_OTA_discover_next(uint8_t *pOTA_id;             // ID of this OTA object
+                               uint8_t *pOTA_file_id;        // Which file stores the OTA data
+                               uint8_t *pOTA_command_id);    // Which command triggers the OTA sequence
 
-    int __attribute__((weak)) crcb_OTA_discover_reset(uint8_t OTA_id)
-    {
-        (void)OTA_id;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
+    int crcb_OTA_discover_reset(uint8_t OTA_id);
 #endif /// def INCLUDE_OTA_SERVICE
 
 #ifdef INCLUDE_STREAM_SERVICE
     ///*************************************************************************
     ///  Stream Service not yet supported
     ///*************************************************************************
-    int __attribute__((weak)) crcb_stream_discover_next(cr_stream_s *stream_desc)
-    {
-        (void)stream_desc;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
 
-    int __attribute__((weak)) crcb_stream_discover_reset(uint8_t  stream_id)
-    {
-        (void)stream_id;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
+    typedef enum {
+        str_number  = 0,  // Array of numbers of the same type
+        str_record  = 1,  // Array of objects, may include a timestamp
+        str_binary  = 2,  // binary data
+        str_string  = 3,  // string data
+        str_reserved      // for expansion
+    } stream_type_e;
+
+    int crcb_stream_discover_next(cr_stream_s *stream_desc);
+
+    int crcb_stream_discover_reset(uint8_t  stream_id);
 
     /// A stream is sent as an array of records.
-    int __attribute__((weak)) crcb_stream_send_packet(const uint8_t stream_id,
-                              void *data,
-                              size_t num_packets)
-    {
-        (void)stream_id;
-        (void)data;
-        (void)num_packets;
-        I3_LOG(LOG_MASK_WEAK, "%s: weak default.\n", __FUNCTION__);
-        return cr_ErrorCodes_NOT_IMPLEMENTED;
-    }
+    int crcb_stream_send_packet(const uint8_t stream_id,
+                                void *data,
+                                size_t num_packets);
 #endif /// INCLUDE_STREAM_SERVICE
 
 
